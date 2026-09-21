@@ -23,7 +23,7 @@ func runtimeEnvironment(t *testing.T) {
 
 // Exercise the actual composition roots, including environment loading and logging.
 func TestBackgroundRuntimeConfiguration(t *testing.T) {
-	for name, run := range map[string]func(context.Context) error{"worker": RunWorker, "indexer": RunIndexer} {
+	for name, newRuntime := range map[string]func(...Option) (*App, error){"worker": NewWorker, "indexer": NewIndexer} {
 		t.Run(name, func(t *testing.T) {
 			runtimeEnvironment(t)
 			t.Setenv("HTTP_ADDRESS", "invalid")
@@ -35,11 +35,19 @@ func TestBackgroundRuntimeConfiguration(t *testing.T) {
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			if err := run(ctx); err != nil {
+			previous := slog.Default()
+			app, err := newRuntime()
+			if err != nil {
 				t.Fatal(err)
 			}
-			if slog.Default().Enabled(ctx, slog.LevelInfo) || !slog.Default().Enabled(ctx, slog.LevelError) {
+			if err := app.Run(ctx); err != nil {
+				t.Fatal(err)
+			}
+			if app.logger.Enabled(ctx, slog.LevelInfo) || !app.logger.Enabled(ctx, slog.LevelError) {
 				t.Fatal("configured log level not applied")
+			}
+			if slog.Default() != previous {
+				t.Fatal("bootstrap mutated global logger")
 			}
 		})
 	}

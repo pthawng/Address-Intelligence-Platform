@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,11 +16,19 @@ var (
 )
 
 func main() {
+	if err := run(); err != nil {
+		bootstrap.LogFailure("worker", version, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := bootstrap.RunWorker(ctx); err != nil {
-		slog.Error("worker stopped", "error", err)
-		os.Exit(1)
+	app, err := bootstrap.NewWorker(bootstrap.WithVersion(version))
+	if err != nil {
+		return err
 	}
+	return app.Run(ctx)
 }
