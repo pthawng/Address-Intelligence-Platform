@@ -12,7 +12,7 @@ import (
 )
 
 func RunAPI(ctx context.Context) error {
-	cfg, err := config.Load()
+	cfg, err := config.LoadFor(config.API)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func health(response http.ResponseWriter, _ *http.Request) {
 }
 
 func RunIndexer(ctx context.Context) error {
-	cfg, err := config.Load()
+	cfg, err := config.LoadFor(config.Indexer)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func RunIndexer(ctx context.Context) error {
 }
 
 func RunWorker(ctx context.Context) error {
-	cfg, err := config.Load()
+	cfg, err := config.LoadFor(config.Worker)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,13 @@ name: address-intelligence-platform
 
 x-backend-environment: &backend-environment
   APP_ENV: ${APP_ENV:-development}
-  DATABASE_URL: postgres://${POSTGRES_USER:-address_app}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}@postgres:5432/${POSTGRES_DB:-address_intelligence}?sslmode=disable
+  DATABASE_URL: ""
+  DATABASE_HOST: postgres
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: ${POSTGRES_DB:-address_intelligence}
+  DATABASE_USER: ${POSTGRES_USER:-address_app}
+  DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}
+  DATABASE_SSLMODE: disable
   ELASTICSEARCH_URL: http://elasticsearch:9200
   OUTBOX_POLL_INTERVAL: ${OUTBOX_POLL_INTERVAL:-1s}
   SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-10s}

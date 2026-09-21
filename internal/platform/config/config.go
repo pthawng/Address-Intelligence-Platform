@@ -13,6 +13,7 @@ import (
 )
 
 type Config struct {
+	runtime               Runtime
 	Environment           string
 	HTTPAddress           string
 	DatabaseURL           string
@@ -27,10 +28,30 @@ type Config struct {
 	OTLPEndpoint          string
 }
 
+type Runtime string
+
+const (
+	API     Runtime = "api"
+	Indexer Runtime = "indexer"
+	Worker  Runtime = "worker"
+)
+
+func (r Runtime) usesHTTP() bool   { return r == "" || r == API }
+func (r Runtime) usesSearch() bool { return r != Worker }
+func (r Runtime) usesOutbox() bool { return r == "" || r == Indexer }
+
+// Load validates all configuration groups. Runtime entry points use LoadFor.
 func Load() (Config, error) {
-	pollInterval, err := duration("OUTBOX_POLL_INTERVAL", time.Second)
-	if err != nil {
-		return Config{}, err
+	return LoadFor("")
+}
+
+// LoadFor ignores settings that are not used by the selected runtime.
+// The empty runtime preserves Load's validation of every group.
+func LoadFor(runtime Runtime) (Config, error) {
+	switch runtime {
+	case "", API, Indexer, Worker:
+	default:
+		return Config{}, fmt.Errorf("runtime must be api, indexer or worker")
 	}
 
 	shutdownTimeout, err := duration("SHUTDOWN_TIMEOUT", 10*time.Second)
@@ -39,20 +60,31 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Environment:        value("APP_ENV", "development"),
-		HTTPAddress:        value("HTTP_ADDRESS", ":8080"),
-		DatabaseURL:        os.Getenv("DATABASE_URL"),
-		ElasticsearchURL:   value("ELASTICSEARCH_URL", "http://localhost:9200"),
-		OutboxPollInterval: pollInterval,
-		ShutdownTimeout:    shutdownTimeout,
-		OTLPEndpoint:       os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+		runtime:         runtime,
+		Environment:     value("APP_ENV", "development"),
+		ShutdownTimeout: shutdownTimeout,
+		OTLPEndpoint:    os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 	}
 	// Keep the existing runtime names authoritative when both names are set.
-	if os.Getenv("HTTP_ADDRESS") == "" && os.Getenv("HTTP_PORT") != "" {
-		cfg.HTTPAddress = ":" + os.Getenv("HTTP_PORT")
+	if runtime.usesHTTP() {
+		cfg.HTTPAddress = value("HTTP_ADDRESS", ":"+value("HTTP_PORT", "8080"))
 	}
-	if os.Getenv("ELASTICSEARCH_URL") == "" {
-		cfg.ElasticsearchURL = value("SEARCH_URL", "http://localhost:9200")
+	cfg.DatabaseURL, err = databaseURL()
+	if err != nil {
+		return Config{}, err
+	}
+	if runtime.usesSearch() {
+		fallback := ""
+		if cfg.Environment == "development" || cfg.Environment == "test" {
+			fallback = "http://localhost:9200"
+		}
+		cfg.ElasticsearchURL = value("ELASTICSEARCH_URL", value("SEARCH_URL", fallback))
+	}
+	if runtime.usesOutbox() {
+		cfg.OutboxPollInterval, err = duration("OUTBOX_POLL_INTERVAL", time.Second)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 	if cfg.Environment == "development" {
 		cfg.LogLevel = slog.LevelDebug
@@ -81,6 +113,9 @@ func Load() (Config, error) {
 		{"HTTP_WRITE_TIMEOUT", 15 * time.Second, &cfg.HTTPWriteTimeout},
 		{"HTTP_IDLE_TIMEOUT", 60 * time.Second, &cfg.HTTPIdleTimeout},
 	} {
+		if !runtime.usesHTTP() {
+			continue
+		}
 		parsed, err := duration(setting.key, setting.fallback)
 		if err != nil {
 			return Config{}, err
@@ -101,18 +136,23 @@ func (c Config) Validate() error {
 	default:
 		return fmt.Errorf("APP_ENV must be development, test, staging or production")
 	}
-	_, port, err := net.SplitHostPort(c.HTTPAddress)
-	if err != nil || !validPort(port) {
-		return fmt.Errorf("HTTP_ADDRESS (or HTTP_PORT) must specify host:port with port between 1 and 65535")
+	if c.runtime.usesHTTP() {
+		_, port, err := net.SplitHostPort(c.HTTPAddress)
+		if err != nil || !validPort(port) {
+			return fmt.Errorf("HTTP_ADDRESS (or HTTP_PORT) must specify host:port with port between 1 and 65535")
+		}
 	}
 	if c.DatabaseURL == "" {
 		if c.Environment == "staging" || c.Environment == "production" {
-			return fmt.Errorf("DATABASE_URL is required in staging and production")
+			return fmt.Errorf("DATABASE_URL or DATABASE_HOST/NAME/USER is required in staging and production")
 		}
 	} else if !validURL(c.DatabaseURL, "postgres", "postgresql") {
 		return fmt.Errorf("DATABASE_URL must be a postgres or postgresql URL with a host and valid port")
 	}
-	if !validURL(c.ElasticsearchURL, "http", "https") {
+	if c.runtime.usesSearch() && c.ElasticsearchURL == "" {
+		return fmt.Errorf("ELASTICSEARCH_URL (or SEARCH_URL) is required in staging and production")
+	}
+	if c.runtime.usesSearch() && !validURL(c.ElasticsearchURL, "http", "https") {
 		return fmt.Errorf("ELASTICSEARCH_URL (or SEARCH_URL) must be an http or https URL with a host and valid port")
 	}
 	if c.OTLPEndpoint != "" && !validURL(c.OTLPEndpoint, "http", "https") {
@@ -121,15 +161,16 @@ func (c Config) Validate() error {
 	for _, setting := range []struct {
 		key   string
 		value time.Duration
+		used  bool
 	}{
-		{"OUTBOX_POLL_INTERVAL", c.OutboxPollInterval},
-		{"SHUTDOWN_TIMEOUT", c.ShutdownTimeout},
-		{"HTTP_READ_HEADER_TIMEOUT", c.HTTPReadHeaderTimeout},
-		{"HTTP_READ_TIMEOUT", c.HTTPReadTimeout},
-		{"HTTP_WRITE_TIMEOUT", c.HTTPWriteTimeout},
-		{"HTTP_IDLE_TIMEOUT", c.HTTPIdleTimeout},
+		{"OUTBOX_POLL_INTERVAL", c.OutboxPollInterval, c.runtime.usesOutbox()},
+		{"SHUTDOWN_TIMEOUT", c.ShutdownTimeout, true},
+		{"HTTP_READ_HEADER_TIMEOUT", c.HTTPReadHeaderTimeout, c.runtime.usesHTTP()},
+		{"HTTP_READ_TIMEOUT", c.HTTPReadTimeout, c.runtime.usesHTTP()},
+		{"HTTP_WRITE_TIMEOUT", c.HTTPWriteTimeout, c.runtime.usesHTTP()},
+		{"HTTP_IDLE_TIMEOUT", c.HTTPIdleTimeout, c.runtime.usesHTTP()},
 	} {
-		if setting.value <= 0 {
+		if setting.used && setting.value <= 0 {
 			return fmt.Errorf("%s must be positive", setting.key)
 		}
 	}

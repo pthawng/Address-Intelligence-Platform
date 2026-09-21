@@ -19,5 +19,7 @@ docker compose --env-file .env.docker ps
 
 Các cổng chỉ bind vào `127.0.0.1` theo mặc định.
 
+Backend nhận các trường `DATABASE_HOST/PORT/NAME/USER/PASSWORD/SSLMODE` riêng; Go encode credential khi tạo URL. `DATABASE_URL` được Compose đặt rỗng để tránh ghi đè các trường này. Password có `$`/`#` nên được bọc nháy đơn trong `.env.docker`; xem [configuration reference](../../configs/README.md).
+
 > [!WARNING]
 > Compose này dành cho local development/integration test. Elasticsearch đang tắt security và chạy single-node; không dùng nguyên trạng cho production.

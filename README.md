@@ -53,7 +53,9 @@ go run ./cmd/api
 
 Ba runtime dùng chung `internal/platform/config`: đọc environment variables, áp dụng mặc định và validate trước khi khởi động. Cấu hình gồm môi trường, HTTP address/timeouts, log level, database/search URL, outbox poll interval, shutdown timeout và OTLP endpoint.
 
-Xem [hướng dẫn cấu hình](configs/README.md) để biết đầy đủ biến, mặc định, alias và cách chạy local/Docker. Ứng dụng không tự nạp `.env`; `.env.example` chỉ là mẫu. `DATABASE_URL` bắt buộc ở staging/production, tùy chọn ở development/test.
+Xem [hướng dẫn cấu hình](configs/README.md) để biết đầy đủ biến, mặc định, alias và cách chạy local/Docker. Ứng dụng không tự nạp `.env`; `.env.example` chỉ là mẫu. Database cấu hình bằng `DATABASE_URL` hoặc các trường `DATABASE_*` riêng, bắt buộc ở staging/production, tùy chọn ở development/test. API/indexer cần search URL tường minh ở staging/production; mỗi runtime bỏ qua nhóm cấu hình không sử dụng.
+
+CI chạy gofmt check, vet, test với race detector, build và validate Compose trên mỗi push/pull request; xem [workflow](.github/workflows/ci.yml).
 
 Hiện API có health endpoint; indexer/worker mới khởi tạo rồi chờ tín hiệu dừng. Database/search adapter, outbox polling và telemetry exporter chưa được tích hợp. `/health/ready` hiện trả trạng thái tĩnh, chưa xác nhận kết nối PostgreSQL/Elasticsearch.
 
@@ -102,6 +104,8 @@ Compose dành cho local development và integration test. Elasticsearch single-n
 > Module path hiện là `address-intelligence-platform`. Hãy đổi sang URL repository chính thức trước khi publish module hoặc thêm package được consumer bên ngoài import.
 
 ## Tài liệu thiết kế
+
+Quy tắc đóng góp và commit: [Coding convention](coding%20convention.md).
 
 - [Tổng quan dự án](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Tổng%20quan%20dự%20án.md)
 - [Kiến trúc kỹ thuật](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Kiến%20trúc%20kỹ%20thuật%20và%20cấu%20trúc%20dự%20án.md)

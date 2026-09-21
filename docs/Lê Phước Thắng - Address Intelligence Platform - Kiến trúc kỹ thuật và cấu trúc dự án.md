@@ -558,7 +558,7 @@ Ví dụ:
 
 ## Configuration
 
-Configuration hiện được triển khai tại `internal/platform/config/config.go`, dùng chung cho `cmd/api`, `cmd/indexer`, `cmd/worker`. Đọc từ process environment, áp dụng mặc định rồi validate trước khi khởi tạo runtime; không tự đọc file `.env`.
+Configuration hiện được triển khai tại `internal/platform/config/`, dùng chung cho `cmd/api`, `cmd/indexer`, `cmd/worker`. Mỗi entry point gọi `LoadFor` theo runtime để chỉ đọc/validate nhóm cấu hình sử dụng; `Load()` hỗ trợ kiểm tra toàn bộ nhóm. Đọc từ process environment, áp dụng mặc định rồi validate trước khi khởi tạo runtime; không tự đọc file `.env`.
 
 ```text
 APP_ENV
@@ -569,15 +569,17 @@ HTTP_READ_TIMEOUT
 HTTP_WRITE_TIMEOUT
 HTTP_IDLE_TIMEOUT
 DATABASE_URL
+DATABASE_HOST / DATABASE_PORT / DATABASE_NAME
+DATABASE_USER / DATABASE_PASSWORD / DATABASE_SSLMODE
 ELASTICSEARCH_URL
 OUTBOX_POLL_INTERVAL
 SHUTDOWN_TIMEOUT
 OTEL_EXPORTER_OTLP_ENDPOINT
 ```
 
-Tên chính theo code là `HTTP_ADDRESS` (mặc định `:8080`) và `ELASTICSEARCH_URL` (mặc định `http://localhost:9200`). `HTTP_PORT` và `SEARCH_URL` chỉ là alias tương thích; tên chính có giá trị sẽ được ưu tiên.
+Tên chính theo code là `HTTP_ADDRESS` (mặc định `:8080`) và `ELASTICSEARCH_URL` (mặc định `http://localhost:9200` chỉ ở development/test). `HTTP_PORT` và `SEARCH_URL` chỉ là alias tương thích; tên chính có giá trị sẽ được ưu tiên. API/indexer bắt buộc khai báo search URL ở staging/production; worker bỏ qua search và HTTP. Outbox poll interval chỉ được indexer sử dụng.
 
-`APP_ENV` nhận `development`, `test`, `staging`, `production`, mặc định `development`. `DATABASE_URL` bắt buộc ở staging/production; development/test cho phép trống để chạy skeleton. URL được kiểm tra scheme/host/port; duration phải hợp lệ và lớn hơn 0. Lỗi cấu hình làm process thoát mã 1, thông báo không chứa giá trị thô.
+`APP_ENV` nhận `development`, `test`, `staging`, `production`, mặc định `development`; deployment phải đặt biến này rõ ràng. Database bắt buộc ở staging/production; development/test cho phép trống để chạy skeleton. `DATABASE_URL` ưu tiên hơn trường riêng. Nếu dùng trường riêng, host/name/user bắt buộc, port mặc định `5432`, SSL mode mặc định `verify-full`; code encode credential bằng `net/url`. Compose local dùng trường riêng và SSL mode `disable`. URL được kiểm tra scheme/host/port; duration phải hợp lệ và lớn hơn 0. Lỗi cấu hình làm process thoát mã 1, thông báo không chứa giá trị thô. Parser theo PostgreSQL driver sẽ bổ sung khi triển khai adapter.
 
 HTTP timeout và log level đã được áp dụng vào runtime. `OUTBOX_POLL_INTERVAL` hiện mới được indexer đọc/ghi log; database/search URL và OTLP endpoint mới được đọc/validate, chưa khởi tạo adapter/exporter. Hai health endpoint hiện trả trạng thái tĩnh; readiness chưa kiểm tra dependency. Các phần kiến trúc mô tả adapter, polling và observability bên dưới là hướng triển khai tiếp theo.
 
