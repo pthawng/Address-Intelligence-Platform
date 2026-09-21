@@ -18,7 +18,7 @@ Nguồn triển khai: `internal/platform/config/`. API, indexer và worker gọi
 | `ELASTICSEARCH_URL` | `http://localhost:9200` ở development/test | API/indexer bắt buộc khai báo URL HTTP/HTTPS ở staging/production; worker bỏ qua |
 | `LOG_LEVEL` | `debug` ở development, `info` ở môi trường khác | `debug`, `info`, `warn`, `error`; không phân biệt hoa thường; structured JSON ra stdout |
 | `OUTBOX_POLL_INTERVAL` | `1s` | Duration dương; hiện indexer chỉ đọc và ghi log giá trị |
-| `SHUTDOWN_TIMEOUT` | `10s` | Duration dương; giới hạn thời gian HTTP server shutdown |
+| `SHUTDOWN_TIMEOUT` | `10s` | Duration dương; deadline chung cho HTTP drain và cleanup tài nguyên của App |
 | `HTTP_READ_HEADER_TIMEOUT` | `5s` | Duration dương; thời gian đọc HTTP headers |
 | `HTTP_READ_TIMEOUT` | `10s` | Duration dương; thời gian đọc toàn bộ HTTP request |
 | `HTTP_WRITE_TIMEOUT` | `15s` | Duration dương; thời gian ghi HTTP response |
@@ -38,7 +38,7 @@ Load thất bại trả về lỗi ghi tên biến, không đưa giá trị thô
 | Search URL | Đọc/validate | Đọc/validate | Bỏ qua |
 | Outbox poll interval | Bỏ qua | Đọc/validate | Bỏ qua |
 
-Nhóm bị bỏ qua có giá trị zero trong `Config`; biến sai thuộc nhóm đó không chặn runtime. Shutdown và OTLP vẫn là cấu hình chung dù background runtime/exporter chưa sử dụng chúng để xử lý tác vụ thực tế.
+Nhóm bị bỏ qua có giá trị zero trong `Config`; biến sai thuộc nhóm đó không chặn runtime. Shutdown dùng cho cleanup chung của App; background runtime chưa có task loop. OTLP mới đọc/validate, exporter chưa được tích hợp.
 
 Ở staging/production, mọi runtime cần database cấu hình bằng `DATABASE_URL` hoặc các trường riêng. Nếu bất kỳ trường riêng nào có giá trị, `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` phải được cung cấp đầy đủ. Code tạo URL bằng `net/url`, encode username/password an toàn. Khi `DATABASE_URL` có giá trị, các trường riêng bị bỏ qua; URL do người dùng cung cấp phải encode credential sẵn. SSL mode của URL tường minh do URL đó quyết định, không bị `DATABASE_SSLMODE` ghi đè.
 

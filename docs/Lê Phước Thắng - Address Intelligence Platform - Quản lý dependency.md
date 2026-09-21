@@ -1,4 +1,4 @@
-# Dependency Management
+# Quản lý dependency
 
 ## Quyết định nền tảng
 

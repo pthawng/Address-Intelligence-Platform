@@ -59,7 +59,11 @@ CI chạy gofmt check, dependency boundaries, module integrity, vet, test với 
 
 ### Dependency Management
 
-Thư viện được duyệt, quyền import theo layer/module và quy trình nâng cấp nằm trong [Dependency Management](docs/dependency-management.md). Policy được thực thi bằng `go run ./tools/dependencycheck`; application chỉ giao tiếp module khác qua `contract`, không gọi repository chéo module. Registry chốt lựa chọn nhưng chưa cài thư viện chưa được code sử dụng.
+Thư viện được duyệt, quyền import theo layer/module và quy trình nâng cấp nằm trong [Quản lý dependency](docs/L%C3%AA%20Ph%C6%B0%E1%BB%9Bc%20Th%E1%BA%AFng%20-%20Address%20Intelligence%20Platform%20-%20Qu%E1%BA%A3n%20l%C3%BD%20dependency.md). Policy được thực thi bằng `go run ./tools/dependencycheck`; application chỉ giao tiếp module khác qua `contract`, không gọi repository chéo module. Registry chốt lựa chọn nhưng chưa cài thư viện chưa được code sử dụng.
+
+### Application Bootstrap
+
+Entry point dùng `bootstrap.NewAPI/NewIndexer/NewWorker` rồi `App.Run(ctx)`. App sở hữu tài nguyên trong Run, cleanup theo thứ tự ngược kể cả khi startup lỗi, và drain HTTP với deadline trước khi force-close. Logger được tạo riêng theo runtime; xem [Application Bootstrap](docs/L%C3%AA%20Ph%C6%B0%E1%BB%9Bc%20Th%E1%BA%AFng%20-%20Address%20Intelligence%20Platform%20-%20Application%20Bootstrap.md) cho lifecycle, thứ tự wiring và giới hạn skeleton.
 
 Hiện API có health endpoint; indexer/worker mới khởi tạo rồi chờ tín hiệu dừng. Database/search adapter, outbox polling và telemetry exporter chưa được tích hợp. `/health/ready` hiện trả trạng thái tĩnh, chưa xác nhận kết nối PostgreSQL/Elasticsearch.
 
@@ -109,7 +113,7 @@ Compose dành cho local development và integration test. Elasticsearch single-n
 
 ## Tài liệu thiết kế
 
-Quy tắc đóng góp và commit: [Coding convention](coding%20convention.md).
+Quy tắc đóng góp và commit: [Quy ước coding](docs/L%C3%AA%20Ph%C6%B0%E1%BB%9Bc%20Th%E1%BA%AFng%20-%20Address%20Intelligence%20Platform%20-%20Quy%20%C6%B0%E1%BB%9Bc%20coding.md).
 
 - [Tổng quan dự án](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Tổng%20quan%20dự%20án.md)
 - [Kiến trúc kỹ thuật](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Kiến%20trúc%20kỹ%20thuật%20và%20cấu%20trúc%20dự%20án.md)

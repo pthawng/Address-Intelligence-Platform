@@ -1,8 +1,8 @@
-# Coding convention
+# Quy ước coding
 
 ## Dependency và ranh giới module
 
-Áp dụng [Dependency Management](docs/dependency-management.md) và [`dependency-policy.json`](dependency-policy.json) cho mọi Go package.
+Áp dụng [Quản lý dependency](Quản%20lý%20dependency.md) và [`dependency-policy.json`](../dependency-policy.json) cho mọi Go package.
 
 - Application không import infrastructure, transport, driver hoặc framework.
 - Module chỉ giao tiếp qua `contract`; không import application/domain/repository implementation của module khác.
@@ -11,6 +11,10 @@
 - Thư viện mới phải có trong registry/policy và được maintainer review; pin version cụ thể, commit `go.mod`/`go.sum`, không tự động nâng toàn bộ dependency.
 - Unit test giữ nguyên boundary; test tích hợp nối adapter trong `test/integration` hoặc `test/e2e`.
 - Trước khi gửi PR, chạy `go run ./tools/dependencycheck`, `go mod tidy -diff`, `go mod verify`, test/vet/build và vulnerability scan.
+
+## Application Bootstrap
+
+Quy tắc bootstrap: `main` chỉ xử lý entry point/exit code; signal context nằm trong hàm trả lỗi để defer chạy trước `os.Exit`. Wiring và lifecycle thuộc `internal/bootstrap`, dependency được truyền qua constructor. Tài nguyên mở trong `App.Run` phải đăng ký cleanup ngay, đóng theo thứ tự ngược và dùng chung shutdown deadline. Không thay đổi logger global. Xem [Application Bootstrap](Application%20Bootstrap.md).
 
 ## Commit message
 

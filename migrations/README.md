@@ -20,4 +20,4 @@ docker exec address-intelligence-platform-postgres-1 \
 
 Migration runner chính thức sẽ được tích hợp vào CI/CD trước khi có môi trường shared; application runtime không tự động migrate khi khởi động.
 
-Dependency Management đã chốt **Goose v3** cho runner tương lai. SQL bootstrap hiện tại chưa có định dạng Goose; không đưa trực tiếp vào runner hoặc sửa migration đã áp dụng. Phải có kế hoạch baseline/adoption và test database mới/cũ trước khi chuyển đổi; xem [quy tắc migration](../docs/dependency-management.md#migration-hiện-tại).
+Dependency Management đã chốt **Goose v3** cho runner tương lai. SQL bootstrap hiện tại chưa có định dạng Goose; không đưa trực tiếp vào runner hoặc sửa migration đã áp dụng. Phải có kế hoạch baseline/adoption và test database mới/cũ trước khi chuyển đổi; xem [quy tắc migration](../docs/L%C3%AA%20Ph%C6%B0%E1%BB%9Bc%20Th%E1%BA%AFng%20-%20Address%20Intelligence%20Platform%20-%20Qu%E1%BA%A3n%20l%C3%BD%20dependency.md#migration-hi%E1%BB%87n-t%E1%BA%A1i).
