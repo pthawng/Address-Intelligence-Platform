@@ -41,7 +41,7 @@ docs/                    Product, architecture và database design
 
 ## Bắt đầu
 
-Yêu cầu Go 1.25 trở lên.
+Yêu cầu Go 1.25.13 trở lên; toolchain CI/Docker hiện pin 1.25.13 để bao gồm các bản vá bảo mật standard library.
 
 ```bash
 go test ./...
@@ -55,7 +55,11 @@ Ba runtime dùng chung `internal/platform/config`: đọc environment variables,
 
 Xem [hướng dẫn cấu hình](configs/README.md) để biết đầy đủ biến, mặc định, alias và cách chạy local/Docker. Ứng dụng không tự nạp `.env`; `.env.example` chỉ là mẫu. Database cấu hình bằng `DATABASE_URL` hoặc các trường `DATABASE_*` riêng, bắt buộc ở staging/production, tùy chọn ở development/test. API/indexer cần search URL tường minh ở staging/production; mỗi runtime bỏ qua nhóm cấu hình không sử dụng.
 
-CI chạy gofmt check, vet, test với race detector, build và validate Compose trên mỗi push/pull request; xem [workflow](.github/workflows/ci.yml).
+CI chạy gofmt check, dependency boundaries, module integrity, vet, test với race detector, build, validate Compose và vulnerability scan trên mỗi push/pull request; xem [workflow](.github/workflows/ci.yml). Toolchain CI được pin trong `.go-version`.
+
+### Dependency Management
+
+Thư viện được duyệt, quyền import theo layer/module và quy trình nâng cấp nằm trong [Dependency Management](docs/dependency-management.md). Policy được thực thi bằng `go run ./tools/dependencycheck`; application chỉ giao tiếp module khác qua `contract`, không gọi repository chéo module. Registry chốt lựa chọn nhưng chưa cài thư viện chưa được code sử dụng.
 
 Hiện API có health endpoint; indexer/worker mới khởi tạo rồi chờ tín hiệu dừng. Database/search adapter, outbox polling và telemetry exporter chưa được tích hợp. `/health/ready` hiện trả trạng thái tĩnh, chưa xác nhận kết nối PostgreSQL/Elasticsearch.
 

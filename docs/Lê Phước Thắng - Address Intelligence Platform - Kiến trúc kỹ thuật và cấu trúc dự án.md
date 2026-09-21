@@ -88,13 +88,13 @@ Module A → Internal implementation của Module B
 | Cache | Không thuộc baseline MVP; chỉ bổ sung Redis sau benchmark |
 | Search Engine | Elasticsearch |
 | Message Broker | Không thuộc baseline MVP |
-| Database Migration | Goose / Atlas |
+| Database Migration | Goose v3 (đã chốt; runner chưa tích hợp) |
 | API Specification | OpenAPI |
 | Serialization | JSON / Protobuf |
 | Observability | OpenTelemetry |
 | Metrics | Prometheus |
 | Dashboard | Grafana |
-| Logging | Structured JSON Logging |
+| Logging | `log/slog`, structured JSON |
 | Container | Docker |
 | Orchestration | Kubernetes khi cần |
 | Infrastructure as Code | Terraform |
@@ -290,7 +290,9 @@ Ranking
 Suggestions
 ```
 
-Cross-module communication phải thông qua contract/public interface.
+Cross-module communication phải thông qua package `contract` chứa public interface và DTO thuần. Application của consumer chỉ import contract của provider; không import application, domain hoặc repository implementation của module khác. Bootstrap khởi tạo implementation và inject qua constructor.
+
+Quy tắc import được kiểm tra tự động bằng `go run ./tools/dependencycheck`, registry tại `dependency-policy.json`. Xem [Dependency Management](dependency-management.md) để biết thư viện đã chốt, layer được phép import, quy trình versioning và giới hạn checker. Root module chỉ chứa `doc.go`; khi triển khai public API, thêm `contract/` cạnh domain/application/infrastructure/transport.
 
 Ví dụ đúng:
 
@@ -507,7 +509,7 @@ internal/place/infrastructure/postgres/
 
 **Mapping PostGIS với `sqlc`:**
 - `sqlc` cấu hình `overrides` trong `sqlc.yaml` để map các cột `geometry` sang kiểu dữ liệu của `go-geom` hoặc `go-geos`.
-- File `mapper.go` tại infrastructure layer chịu trách nhiệm chuyển đổi từ kiểu của `go-geom`/`go-geos` sang Domain Value Object (ví dụ: `domain.Coordinate{Latitude, Longitude}`).
+- File `mapper.go` tại infrastructure layer chịu trách nhiệm chuyển đổi từ kiểu GIS sang Domain Value Object (ví dụ: `domain.Coordinate{Latitude, Longitude}`). Registry duyệt `go-geom` khi cần; `go-geos`/CGO cần ADR riêng vì Docker build hiện tắt CGO.
 - Domain layer tuyệt đối không import thư viện GIS hay PostGIS driver.
 
 Migration:

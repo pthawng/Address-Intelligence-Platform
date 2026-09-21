@@ -1,5 +1,17 @@
 # Coding convention
 
+## Dependency và ranh giới module
+
+Áp dụng [Dependency Management](docs/dependency-management.md) và [`dependency-policy.json`](dependency-policy.json) cho mọi Go package.
+
+- Application không import infrastructure, transport, driver hoặc framework.
+- Module chỉ giao tiếp qua `contract`; không import application/domain/repository implementation của module khác.
+- Domain/contract không phụ thuộc database, HTTP, Redis hay telemetry SDK.
+- Bootstrap nối implementation bằng constructor injection; platform không phụ thuộc business module.
+- Thư viện mới phải có trong registry/policy và được maintainer review; pin version cụ thể, commit `go.mod`/`go.sum`, không tự động nâng toàn bộ dependency.
+- Unit test giữ nguyên boundary; test tích hợp nối adapter trong `test/integration` hoặc `test/e2e`.
+- Trước khi gửi PR, chạy `go run ./tools/dependencycheck`, `go mod tidy -diff`, `go mod verify`, test/vet/build và vulnerability scan.
+
 ## Commit message
 
 Mọi commit của dự án phải theo định dạng:

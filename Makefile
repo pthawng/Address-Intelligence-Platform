@@ -1,4 +1,4 @@
-.PHONY: test vet fmt run-api run-indexer run-worker docker-config docker-up docker-down docker-logs db-bootstrap db-verify
+.PHONY: test vet fmt deps-check deps-verify vuln run-api run-indexer run-worker docker-config docker-up docker-down docker-logs db-bootstrap db-verify
 
 test:
 	go test ./...
@@ -7,7 +7,17 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -w cmd internal
+	gofmt -w cmd internal tools test
+
+deps-check:
+	go run ./tools/dependencycheck
+
+deps-verify:
+	go mod tidy -diff
+	go mod verify
+
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
 
 run-api:
 	go run ./cmd/api

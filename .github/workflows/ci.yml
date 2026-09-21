@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+env:
+  GOWORK: "off"
+  GOFLAGS: "-mod=readonly"
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,15 +21,21 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version-file: .go-version
           cache: false
       - name: Check formatting
         run: |
-          unformatted=$(gofmt -l cmd internal)
+          unformatted=$(gofmt -l cmd internal tools test)
           if [ -n "$unformatted" ]; then
             printf '%s\n' "$unformatted"
             exit 1
           fi
+      - name: Dependency boundaries
+        run: go run ./tools/dependencycheck
+      - name: Module integrity
+        run: |
+          go mod tidy -diff
+          go mod verify
       - name: Vet
         run: go vet ./...
       - name: Test with race detector
@@ -34,3 +44,5 @@ jobs:
         run: go build ./...
       - name: Validate local Compose configuration
         run: docker compose --env-file .env.docker.example --profile worker config --quiet
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
