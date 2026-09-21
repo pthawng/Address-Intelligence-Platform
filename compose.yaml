@@ -1,0 +1,143 @@
+name: address-intelligence-platform
+
+x-backend-environment: &backend-environment
+  APP_ENV: ${APP_ENV:-development}
+  DATABASE_URL: postgres://${POSTGRES_USER:-address_app}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}@postgres:5432/${POSTGRES_DB:-address_intelligence}?sslmode=disable
+  ELASTICSEARCH_URL: http://elasticsearch:9200
+  OUTBOX_POLL_INTERVAL: ${OUTBOX_POLL_INTERVAL:-1s}
+  SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-10s}
+
+x-backend-common: &backend-common
+  restart: unless-stopped
+  init: true
+  env_file:
+    - path: .env.docker
+      required: false
+  environment: *backend-environment
+  depends_on:
+    postgres:
+      condition: service_healthy
+    elasticsearch:
+      condition: service_healthy
+  networks:
+    - backend
+  read_only: true
+  tmpfs:
+    - /tmp:size=16m,mode=1777
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 15s
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-address_intelligence}
+      POSTGRES_USER: ${POSTGRES_USER:-address_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C.UTF-8
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployments/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./migrations:/migrations:ro
+      - ./scripts:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - backend
+    shm_size: 256mb
+    stop_grace_period: 30s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.4
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+      cluster.name: address-intelligence-platform-local
+      node.name: elasticsearch
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:9200/_cluster/health?wait_for_status=yellow >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - backend
+    mem_limit: 1g
+    stop_grace_period: 60s
+
+  api:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api
+        VERSION: ${APP_VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: address-intelligence-platform-api:${APP_VERSION:-dev}
+    environment:
+      <<: *backend-environment
+      HTTP_ADDRESS: :8080
+      HEALTHCHECK_URL: http://127.0.0.1:8080/health/live
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "/service", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  indexer:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: indexer
+        VERSION: ${APP_VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: address-intelligence-platform-indexer:${APP_VERSION:-dev}
+
+  worker:
+    <<: *backend-common
+    profiles: ["worker"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: worker
+        VERSION: ${APP_VERSION:-dev}
+        COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: address-intelligence-platform-worker:${APP_VERSION:-dev}
+
+networks:
+  backend:
+    name: address-intelligence-platform-backend
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: address-intelligence-platform-postgres-data
+  elasticsearch_data:
+    name: address-intelligence-platform-elasticsearch-data

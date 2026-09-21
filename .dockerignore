@@ -1,0 +1,15 @@
+.git
+.github
+.cache
+.idea
+.vscode
+bin
+data
+tmp
+docs
+test
+deployments
+*.md
+.env
+.env.*
+!.env.example

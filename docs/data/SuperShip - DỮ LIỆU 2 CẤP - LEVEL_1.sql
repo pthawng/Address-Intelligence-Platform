@@ -1,0 +1,39 @@
+-- SuperShip - DỮ LIỆU 2 CẤP - LEVEL_1 (Tỉnh/Thành Phố - area_type=2)
+-- Generated from: DANH SÁCH PHƯỜNG XÃ ĐẶC KHU SAU SÁP NHẬP
+-- Total records: 34
+-- area_type = 2: two-level hierarchy model (province → commune)
+
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P01', 'Thành phố Hà Nội', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P07', 'Tỉnh Cao Bằng', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P08', 'Tỉnh Tuyên Quang', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P09', 'Tỉnh Lào Cai', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P13', 'Tỉnh Điện Biên', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P14', 'Tỉnh Lai Châu', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P15', 'Tỉnh Sơn La', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P10', 'Tỉnh Thái Nguyên', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P11', 'Tỉnh Lạng Sơn', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P03', 'Tỉnh Quảng Ninh', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P12', 'Tỉnh Phú Thọ', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P02', 'Tỉnh Bắc Ninh', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P04', 'Thành phố Hải Phòng', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P05', 'Tỉnh Hưng Yên', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P06', 'Tỉnh Ninh Bình', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P16', 'Tỉnh Thanh Hóa', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P17', 'Tỉnh Nghệ An', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P18', 'Tỉnh Hà Tĩnh', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P19', 'Tỉnh Quảng Trị', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P20', 'Thành phố Huế', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P21', 'Thành phố Đà Nẵng', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P22', 'Tỉnh Quảng Ngãi', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P23', 'Tỉnh Khánh Hòa', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P24', 'Tỉnh Gia Lai', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P25', 'Tỉnh Đắk Lắk', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P26', 'Tỉnh Lâm Đồng', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P27', 'Tỉnh Tây Ninh', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P28', 'Tỉnh Đồng Nai', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P29', 'Thành phố Hồ Chí Minh', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P30', 'Tỉnh Vĩnh Long', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P31', 'Tỉnh Đồng Tháp', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P32', 'Tỉnh An Giang', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P33', 'Thành phố Cần Thơ', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
+INSERT INTO admin_units (unit_code, unit_name, unit_level, area_type) VALUES ('P34', 'Tỉnh Cà Mau', 1, 2) ON CONFLICT (unit_code) DO UPDATE SET area_type = 2;
