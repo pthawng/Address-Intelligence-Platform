@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 
-BEGIN;
+BEGIN ISOLATION LEVEL SERIALIZABLE;
 
 DO $$
 DECLARE
@@ -107,9 +107,12 @@ $$;
 
 ROLLBACK;
 
-SELECT version, description, applied_at
-FROM schema_migrations
-ORDER BY version;
+-- Goose is authoritative; schema_migrations retains only the legacy baseline.
+SELECT version_id AS goose_schema_version
+FROM public.goose_db_version
+WHERE is_applied
+ORDER BY id DESC
+LIMIT 1;
 
 SELECT count(*) AS core_table_count
 FROM information_schema.tables
