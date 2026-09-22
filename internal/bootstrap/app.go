@@ -9,14 +9,17 @@ import (
 	"sync/atomic"
 
 	"address-intelligence-platform/internal/platform/config"
+	"address-intelligence-platform/internal/platform/database"
 	platformlog "address-intelligence-platform/internal/platform/logging"
 )
 
 // App is a single-use runtime. New constructors allocate no external resources;
 // Run owns resources from acquisition through cleanup, including startup failures.
 type App struct {
+	service config.Runtime
 	cfg     config.Config
 	logger  *slog.Logger
+	db      *database.Pool
 	started atomic.Bool
 	run     func(context.Context, *resources) error
 }
@@ -40,7 +43,7 @@ func newApp(runtime config.Runtime, options ...Option) (*App, error) {
 	for _, option := range options {
 		option(&opts)
 	}
-	return &App{cfg: cfg, logger: platformlog.New(opts)}, nil
+	return &App{cfg: cfg, service: runtime, logger: platformlog.New(opts)}, nil
 }
 
 // Run blocks until cancellation or failure. Cancellation is a normal stop;
@@ -64,6 +67,25 @@ func (a *App) Run(ctx context.Context) (err error) {
 			a.logger.Info("runtime stopped")
 		}
 	}()
+	if a.cfg.DatabaseURL != "" {
+		a.db, err = database.Open(ctx, a.cfg.DatabaseURL, string(a.service), a.cfg.DatabasePool)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
+			return err
+		}
+		owned.add("database", func(ctx context.Context) error {
+			done := make(chan struct{})
+			go func() { a.db.Close(); close(done) }()
+			select {
+			case <-done:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
+	}
 	err = a.run(ctx, &owned)
 	return err
 }

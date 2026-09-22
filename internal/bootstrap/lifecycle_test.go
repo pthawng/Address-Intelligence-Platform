@@ -211,7 +211,7 @@ func TestHTTPShutdownTimeoutCancelsRequests(t *testing.T) {
 
 func TestUnexpectedServerFailureAndHealthRoutes(t *testing.T) {
 	app := testApp(t)
-	listener, _, done := startHTTP(t, app, healthRoutes())
+	listener, _, done := startHTTP(t, app, databaseHealthRoutes(func(context.Context) error { return nil }, time.Second))
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		if err := await(t, request(t, listener, path)); err != nil {
 			t.Fatal(err)

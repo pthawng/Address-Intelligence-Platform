@@ -23,12 +23,12 @@ func main() {
 }
 
 func run() error {
-	if len(os.Args) == 2 && os.Args[1] == "healthcheck" {
-		return checkHealth()
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if len(os.Args) == 2 && os.Args[1] == "healthcheck" {
+		return checkHealth(ctx)
+	}
 
 	app, err := bootstrap.NewAPI(bootstrap.WithVersion(version))
 	if err != nil {
