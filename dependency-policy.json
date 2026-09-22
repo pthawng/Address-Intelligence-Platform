@@ -1,10 +1,11 @@
 {
   "modules": ["administrative", "autocomplete", "datasource", "deliverypoint", "geocoding", "importjob", "outbox", "place", "resolution", "search"],
-  "platforms": ["config", "database", "logging", "searchengine", "telemetry"],
+  "platforms": ["apperror", "httpserver", "config", "database", "logging", "searchengine", "telemetry"],
   "pure_standard_library": ["bytes", "cmp", "context", "encoding", "errors", "fmt", "math", "maps", "regexp", "slices", "sort", "strconv", "strings", "time", "unicode"],
   "external": [
+	{"prefix": "github.com/pressly/goose/v3", "importers": ["internal/platform/database/**", "test/integration/**"]},
     {"prefix": "github.com/go-chi/chi/v5", "importers": ["internal/bootstrap/**", "internal/*/transport/http/**"]},
-    {"prefix": "github.com/jackc/pgx/v5", "importers": ["internal/platform/database/**", "internal/*/infrastructure/postgres/**"]},
+    {"prefix": "github.com/jackc/pgx/v5", "importers": ["internal/platform/database/**", "internal/*/infrastructure/postgres/**", "test/integration/**"]},
     {"prefix": "github.com/jackc/pgx/v5/pgxpool", "importers": ["internal/platform/database/**"]},
     {"prefix": "github.com/elastic/go-elasticsearch/v9", "importers": ["internal/platform/searchengine/**", "internal/*/infrastructure/elasticsearch/**"]},
     {"prefix": "github.com/go-playground/validator/v10", "importers": ["internal/*/transport/http/**"]},
