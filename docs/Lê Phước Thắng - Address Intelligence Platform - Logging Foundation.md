@@ -21,9 +21,11 @@ validated configuration may not exist yet.
 The JSON handler also includes `time`, `level`, and `msg`. Do not repeat reserved
 fields in business attributes. Correlation fields remain at the JSON root even
 with `WithGroup`. HTTP 4xx uses WARN, 5xx ERROR, otherwise INFO. Request aborts
-use ERROR and `request_aborted`; the original panic still reaches net/http's
-recovery. A panic after headers preserves the status already written, not an
-invented 500. net/http may separately log its panic diagnostic.
+use ERROR and `request_aborted`; the HTTP server recovery aborts a panic after response commitment using
+http.ErrAbortHandler, preserving the status already written. A panic before
+commitment becomes a safe JSON 500 and a completed ERROR access event. Panic
+values are not logged because they may contain secrets. This policy is applied
+by platform/httpserver; the logging middleware alone does not recover panics.
 
 HTTP access error codes (`http_client_error`, `http_server_error`) are transport
 categories, not domain error codes. Business events should use specific stable
@@ -65,3 +67,6 @@ deadlines through the response wrapper. Legacy optional writer type assertions
 Build version uses the existing `-ldflags "-X main.version=..."` mechanism. Keep
 request-specific fields absent on startup/background events; do not manufacture
 empty IDs or zero HTTP fields to force every event into the same shape.
+
+Current middleware behavior (panic stack traces, CORS, timeout, rate limiting,
+tracing and metrics) is documented in [Middleware Foundation](middleware.md).
