@@ -1,0 +1,26 @@
+root = "."
+tmp_dir = "/tmp/air"
+env_files = []
+
+[build]
+cmd = "go build -buildvcs=false -o /tmp/air/service ./cmd/$SERVICE"
+bin = "/tmp/air/service"
+include_ext = ["go", "mod", "sum"]
+exclude_dir = [".git", ".agents", ".codex", "docs", "test", "tools", "docker", "tmp", "bin", ".cache"]
+exclude_regex = ["_test\\.go"]
+exclude_unchanged = true
+poll = true
+poll_interval = 1000
+delay = 500
+stop_on_error = true
+send_interrupt = true
+kill_delay = "12s"
+
+[log]
+time = true
+
+[misc]
+clean_on_exit = true
+
+[screen]
+clear_on_rebuild = false

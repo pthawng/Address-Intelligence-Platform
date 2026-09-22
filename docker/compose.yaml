@@ -6,8 +6,8 @@ x-backend-environment: &backend-environment
   DATABASE_HOST: postgres
   DATABASE_PORT: "5432"
   DATABASE_NAME: ${POSTGRES_DB:-address_intelligence}
-  DATABASE_USER: ${POSTGRES_USER:-address_app}
-  DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}
+  DATABASE_USER: address_runtime
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?set DATABASE_PASSWORD in docker/.env}
   DATABASE_SSLMODE: disable
   ELASTICSEARCH_URL: http://elasticsearch:9200
   OUTBOX_POLL_INTERVAL: ${OUTBOX_POLL_INTERVAL:-1s}
@@ -17,10 +17,12 @@ x-backend-common: &backend-common
   restart: unless-stopped
   init: true
   env_file:
-    - path: .env.docker
+    - path: .env
       required: false
   environment: *backend-environment
   depends_on:
+    migrate:
+      condition: service_completed_successfully
     postgres:
       condition: service_healthy
     elasticsearch:
@@ -37,21 +39,45 @@ x-backend-common: &backend-common
   stop_grace_period: 15s
 
 services:
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        SERVICE: migrate
+    command: [up]
+    environment:
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:-}
+      MIGRATION_DATABASE_HOST: postgres
+      MIGRATION_DATABASE_PORT: "5432"
+      MIGRATION_DATABASE_NAME: ${POSTGRES_DB:-address_intelligence}
+      MIGRATION_DATABASE_USER: address_migrator
+      MIGRATION_DATABASE_PASSWORD: ${MIGRATION_PASSWORD:?set MIGRATION_PASSWORD in docker/.env}
+      MIGRATION_DATABASE_SSLMODE: disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backend]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
   postgres:
     image: postgis/postgis:17-3.5
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-address_intelligence}
       POSTGRES_USER: ${POSTGRES_USER:-address_app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?set DATABASE_PASSWORD in docker/.env}
+      MIGRATION_PASSWORD: ${MIGRATION_PASSWORD:?set MIGRATION_PASSWORD in docker/.env}
       POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C.UTF-8
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./deployments/docker/postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./migrations:/migrations:ro
-      - ./scripts:/scripts:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../migrations:/migrations:ro
+      - ../scripts:/scripts:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -91,8 +117,8 @@ services:
   api:
     <<: *backend-common
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         SERVICE: api
         VERSION: ${APP_VERSION:-dev}
@@ -115,8 +141,8 @@ services:
   indexer:
     <<: *backend-common
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         SERVICE: indexer
         VERSION: ${APP_VERSION:-dev}
@@ -128,8 +154,8 @@ services:
     <<: *backend-common
     profiles: ["worker"]
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         SERVICE: worker
         VERSION: ${APP_VERSION:-dev}
@@ -146,4 +172,5 @@ volumes:
   postgres_data:
     name: address-intelligence-platform-postgres-data
   elasticsearch_data:
-    name: address-intelligence-platform-elasticsearch-data
+    name: ${ELASTICSEARCH_DATA_VOLUME:-address-intelligence-platform-elasticsearch-data}
+    external: ${ELASTICSEARCH_DATA_EXTERNAL:-false}

@@ -12,4 +12,7 @@ deployments
 *.md
 .env
 .env.*
-!.env.example
+**/.env
+**/.env.*
+.agents
+.codex

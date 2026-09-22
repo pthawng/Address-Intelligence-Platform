@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1.7
+FROM golang:1.25.13-bookworm
+ARG AIR_VERSION=v1.64.5
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOTOOLCHAIN=local GOBIN=/usr/local/bin go install github.com/air-verse/air@${AIR_VERSION}
+RUN groupadd --gid 10001 dev && useradd --uid 10001 --gid dev --create-home dev \
+    && mkdir -p /go/pkg/mod /home/dev/.cache/go-build \
+    && chown -R dev:dev /go /home/dev
+ENV GOCACHE=/home/dev/.cache/go-build GOTOOLCHAIN=local GOFLAGS=-mod=readonly
+WORKDIR /src
+USER 10001:10001
+ENTRYPOINT ["air", "-c", "docker/air.toml"]

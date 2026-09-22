@@ -1,3 +1,6 @@
+COMPOSE = docker compose --env-file docker/.env -f docker/compose.yaml
+DEV_COMPOSE = $(COMPOSE) -f docker/compose.dev.yaml
+
 .PHONY: test vet fmt deps-check deps-verify vuln run-api run-indexer run-worker docker-config docker-up docker-down docker-logs db-bootstrap db-verify
 
 test:
@@ -29,19 +32,34 @@ run-worker:
 	go run ./cmd/worker
 
 docker-config:
-	docker compose --env-file .env.docker config --quiet
+	$(DEV_COMPOSE) config --quiet
 
 docker-up:
-	docker compose --env-file .env.docker up --build -d
+	$(DEV_COMPOSE) up --build -d --wait
 
 docker-down:
-	docker compose --env-file .env.docker down
+	$(DEV_COMPOSE) down
 
 docker-logs:
-	docker compose --env-file .env.docker logs --follow
+	$(DEV_COMPOSE) logs --follow
 
 db-bootstrap:
-	docker exec address-intelligence-platform-postgres-1 psql -v ON_ERROR_STOP=1 -U address_app -d address_intelligence -f /migrations/000001_create_core_schema.sql
+	go run ./cmd/migrate up
 
 db-verify:
-	docker exec address-intelligence-platform-postgres-1 psql -v ON_ERROR_STOP=1 -U address_app -d address_intelligence -f /scripts/verify_database.sql
+	$(COMPOSE) exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -f /scripts/verify_database.sql'
+
+.PHONY: db-status db-adopt-legacy test-db
+db-status:
+	go run ./cmd/migrate status
+db-adopt-legacy:
+	go run ./cmd/migrate adopt-legacy
+test-db:
+	go test -count=1 ./test/integration
+
+.PHONY: docker-runtime-up docker-worker-up
+docker-runtime-up:
+	$(COMPOSE) up --build -d --wait
+
+docker-worker-up:
+	$(DEV_COMPOSE) --profile worker up --build -d --wait

@@ -1,0 +1,38 @@
+# Merge with compose.yaml. The base remains the immutable runtime-image mode.
+x-dev: &dev
+  image: address-intelligence-platform-backend:dev
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.dev
+  restart: "no"
+  read_only: true
+  tmpfs:
+    - /tmp:size=1g,mode=1777,exec
+  volumes:
+    - ..:/src:ro
+    - go_mod_cache:/go/pkg/mod
+    - go_build_cache:/home/dev/.cache/go-build
+
+services:
+  api:
+    <<: *dev
+    environment:
+      APP_ENV: development
+      SERVICE: api
+    healthcheck:
+      test: ["CMD", "/tmp/air/service", "healthcheck"]
+      start_period: 90s
+  indexer:
+    <<: *dev
+    environment:
+      APP_ENV: development
+      SERVICE: indexer
+  worker:
+    <<: *dev
+    environment:
+      APP_ENV: development
+      SERVICE: worker
+
+volumes:
+  go_mod_cache:
+  go_build_cache:
