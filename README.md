@@ -34,7 +34,7 @@ internal/               Private application packages
   bootstrap/            Composition root cho từng runtime
 api/openapi/             OpenAPI contracts
 migrations/              PostgreSQL/PostGIS migrations
-deployments/docker/      Local container deployment
+docker/                  Docker images, Compose and dev hot reload
 test/                    Integration, E2E và fixtures
 docs/                    Product, architecture và database design
 ```
@@ -65,14 +65,17 @@ Thư viện được duyệt, quyền import theo layer/module và quy trình n�
 
 Entry point dùng `bootstrap.NewAPI/NewIndexer/NewWorker` rồi `App.Run(ctx)`. App sở hữu tài nguyên trong Run, cleanup theo thứ tự ngược kể cả khi startup lỗi, và drain HTTP với deadline trước khi force-close. Logger được tạo riêng theo runtime; xem [Application Bootstrap](docs/L%C3%AA%20Ph%C6%B0%E1%BB%9Bc%20Th%E1%BA%AFng%20-%20Address%20Intelligence%20Platform%20-%20Application%20Bootstrap.md) cho lifecycle, thứ tự wiring và giới hạn skeleton.
 
-Hiện API có health endpoint; indexer/worker mới khởi tạo rồi chờ tín hiệu dừng. Database/search adapter, outbox polling và telemetry exporter chưa được tích hợp. `/health/ready` hiện trả trạng thái tĩnh, chưa xác nhận kết nối PostgreSQL/Elasticsearch.
+API có PostgreSQL pool và readiness kiểm tra schema/quyền database. Indexer/worker mới khởi tạo rồi chờ tín hiệu dừng; search adapter và outbox polling chưa được tích hợp.
 
 ### Chạy bằng Docker
 
+Dev có hot reload tự động cho Go bằng Air. Xem [Docker dev guide](docker/README.md)
+cho chế độ dev, runtime image và cách giữ dữ liệu khi đổi Compose project.
+
 ```powershell
-Copy-Item .env.docker.example .env.docker
-docker compose --env-file .env.docker up --build -d
-docker compose --env-file .env.docker ps
+Copy-Item docker/.env.example docker/.env
+docker compose --env-file docker/.env -f docker/compose.yaml -f docker/compose.dev.yaml up --build -d
+docker compose --env-file docker/.env -f docker/compose.yaml -f docker/compose.dev.yaml ps
 ```
 
 API health endpoints:
@@ -85,18 +88,14 @@ GET http://localhost:8080/health/ready
 Worker là profile tùy chọn:
 
 ```bash
-docker compose --env-file .env.docker --profile worker up --build -d
+docker compose --env-file docker/.env -f docker/compose.yaml -f docker/compose.dev.yaml --profile worker up --build -d
 ```
 
 ### Database schema
 
-Core schema nằm trong `migrations/000001_create_core_schema.sql`. Với database volume mới, apply migration một lần:
+Goose runner trong `cmd/migrate` quản lý schema; Compose chạy migration trước khi khởi động backend. Migration mới nằm trong `internal/platform/database/schema/`; SQL trong `migrations/` là baseline legacy bất biến.
 
-```powershell
-docker exec address-intelligence-platform-postgres-1 `
-  psql -v ON_ERROR_STOP=1 -U address_app -d address_intelligence `
-  -f /migrations/000001_create_core_schema.sql
-```
+Xem [database/migration runbook](migrations/README.md) cho khởi tạo mới, ownership/adoption database cũ, phân quyền và deploy/recovery. Không apply baseline thủ công cho database mới.
 
 Kiểm tra các invariant bằng transaction tự rollback:
 
@@ -118,3 +117,41 @@ Quy tắc đóng góp và commit: [Quy ước coding](docs/L%C3%AA%20Ph%C6%B0%E1
 - [Tổng quan dự án](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Tổng%20quan%20dự%20án.md)
 - [Kiến trúc kỹ thuật](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Kiến%20trúc%20kỹ%20thuật%20và%20cấu%20trúc%20dự%20án.md)
 - [Thiết kế cơ sở dữ liệu](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Thiết%20kế%20cơ%20sở%20dữ%20liệu.md)
+
+### Error Foundation
+
+Domain/application errors and the shared HTTP error contract are documented in
+[Error Foundation](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Error%20Foundation.md). Use `apperror` for stable error identities and
+`httpserver.Adapt` for centralized status mapping and safe JSON responses.
+
+
+### HTTP Server Foundation
+
+`internal/platform/httpserver` owns the router, configured server, middleware,
+JSON request/response helpers and error mapper. Bootstrap retains listener and
+graceful shutdown ownership. See [HTTP Server Foundation](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20HTTP%20Server%20Foundation.md).
+
+### Standard API Response
+
+Success, pagination, validation errors, status codes and UTC timestamps follow
+[Standard API Response](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Standard%20API%20Response.md). HTTP helpers own the envelope;
+endpoints pass DTOs and return typed errors.
+
+### Logging Foundation
+
+Runtime logs, slog structure, and HTTP access logging policy are documented in
+[Logging Foundation](docs/Lê%20Phước%20Thắng%20-%20Address%20Intelligence%20Platform%20-%20Logging%20Foundation.md).
+
+### Middleware Foundation
+
+See [Middleware Foundation](docs/middleware.md) for CORS (localhost:3000),
+recovery with stack traces, timeout, rate limiting, OIDC auth integration,
+OpenTelemetry tracing and development metrics at `/metrics`.
+
+### Context Foundation
+
+Pass `ctx context.Context` first through usecases, repository ports and adapters.
+HTTP handlers forward `r.Context()`; repositories must not create new root contexts.
+The existing dependency check also enforces context syntax and root ownership.
+See [Context Foundation](<docs/Lê Phước Thắng - Address Intelligence Platform - Context Foundation.md>)
+for cancellation, deadlines, worker lifecycles and the limits of static checking.

@@ -6,9 +6,9 @@
 | **Tên dự án** | Address Intelligence Platform |
 | **Tên tài liệu** | Backlog và Nhật ký công việc |
 | **Developer** | Lê Phước Thắng |
-| **Phiên bản** | `v2.3.0` |
+| **Phiên bản** | `v2.3.1` |
 | **Trạng thái** | Active Baseline MVP |
-| **Ngày cập nhật** | 22/09/2026 02:10 |
+| **Ngày cập nhật** | 22/09/2026 22:54 |
 
 > **Quy ước ghi chép nhật ký công việc:**  
 > - **Sắp xếp:** Tất cả các công việc được sắp xếp theo thời gian giảm dần (từ **MỚI NHẤT** đến **CŨ NHẤT**).  
@@ -21,6 +21,8 @@
 
 | STT | Thời gian (ngày giờ, phút) | Công việc thực hiện | Chi tiết công việc | Dev thực hiện | Trạng thái |
 |:---:|:---:|---|---|:---:|:---:|
+| **17** | `22/09/2026 22:54` | Thiết lập Context Foundation | Chuẩn hóa context-first cho HTTP server, truyền context vào healthcheck CLI; thêm AST guard trong dependencycheck và test client cancellation/deadline/correlation; quy định flow handler-usecase-repository-driver và ngoại lệ graceful shutdown. | Lê Phước Thắng | `Hoàn thành` |
+| **16** | `22/09/2026 22:30` | Chuẩn hóa toàn bộ tên tài liệu dự án | Đổi tên các file tài liệu trong `docs/` (`api-responses.md`, `errors.md`, `http-server.md`, `logging.md`) sang quy ước `Lê Phước Thắng - Address Intelligence Platform - <Tên tài liệu>.md`, cập nhật toàn bộ các liên kết markdown trong `README.md`, `.github/workflows/README.md` và các tài liệu liên quan. | Lê Phước Thắng | `Hoàn thành` |
 | **15** | `22/09/2026 01:18` | Hoàn thiện Logging Foundation | Chuẩn hóa JSON logger với service/environment/version, HTTP access log và request correlation; bổ sung điểm tích hợp trace_id, quy tắc bảo vệ dữ liệu và tests. | Lê Phước Thắng | `Hoàn thành` |
 | **11** | `22/09/2026 02:10` | Chuẩn hóa tên tài liệu dự án | Đổi các tài liệu mới sang quy ước `Lê Phước Thắng - Address Intelligence Platform - <Tên tài liệu>.md`, đưa về thư mục `docs/`, cập nhật toàn bộ liên kết và đồng bộ tiêu đề tài liệu. Giữ `dependency-policy.json` ở root vì đây là policy máy đọc. | Lê Phước Thắng | `Hoàn thành` |
 | **12** | `22/09/2026 01:55` | Hoàn thiện Application Bootstrap & Runtime Lifecycle | Tách `NewAPI`, `NewIndexer`, `NewWorker` và `App.Run(ctx)` trong `internal/bootstrap/`; thêm resource stack cleanup LIFO, graceful HTTP drain, timeout force-close, logger injection theo runtime và test startup/shutdown/error lifecycle. Giữ database/search adapter và task loop ở trạng thái chưa tích hợp. | Lê Phước Thắng | `Hoàn thành` |
@@ -49,6 +51,6 @@
 
 # 3. Tổng kết tiến độ
 
-- **Tổng số công việc đã hoàn thành:** 15 công việc.
+- **Tổng số công việc đã hoàn thành:** 17 công việc.
 - **Tổng số công việc cần xử lý:** 0 công việc.
 - **Tiến độ dự án:** Đã hoàn thành toàn bộ khung kiến trúc, tài liệu chuẩn hóa, cấu hình hạ tầng và sẵn sàng cho việc triển khai chi tiết các API Service Core.

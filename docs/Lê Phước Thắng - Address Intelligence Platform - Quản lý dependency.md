@@ -16,7 +16,7 @@ Registry dưới đây chốt lựa chọn cho team. **Được duyệt không c
 | Logger | `log/slog`, JSON stdout | Factory ở `platform/logging`; application có thể nhận `*slog.Logger` qua constructor. Domain/contract không log. Không thêm Zap/Logrus |
 | Validation | Go thuần cho business/config; `github.com/go-playground/validator/v10` cho HTTP DTO khi cần | Validator chỉ `*/transport/http`; bật `WithRequiredStructEnabled` khi tích hợp. Domain tự bảo vệ invariant, không phụ thuộc tag validator |
 | Telemetry | OpenTelemetry Go | API/instrumentation chỉ transport, infrastructure, `platform/telemetry`; SDK/exporter chỉ `platform/telemetry`. Domain/application dùng `context.Context`, không import OTel |
-| Migration | Goose v3, SQL migration | Chốt Goose thay cho lựa chọn Goose/Atlas. CLI/tool deploy riêng, pin version khi tích hợp; không import vào API/indexer/worker. Migration runner chưa được tích hợp |
+| Migration | Goose v3, SQL migration | Chốt Goose thay cho lựa chọn Goose/Atlas. CLI/tool deploy riêng, pin version khi tích hợp; không import vào API/indexer/worker. Runner đã tích hợp trong `cmd/migrate`, pin qua go.mod |
 | Testing | `testing`, `httptest`, table tests, fake viết tay | Mặc định standard library; `testify` chỉ `_test.go` nếu cần. Testcontainers chỉ `_test.go` trong `test/integration` hoặc `test/e2e`. Không mock repository của module khác để vượt boundary |
 | Geospatial | PostGIS; `github.com/twpayne/go-geom` nếu sqlc cần mapping | Chỉ `*/infrastructure/postgres`; chưa cài. `go-geos`/CGO cần ADR vì Docker runtime hiện dùng `CGO_ENABLED=0` |
 | Security tooling | `golang.org/x/vuln/cmd/govulncheck@v1.7.0` | Dev/CI, không thêm vào runtime module; chọn bản tương thích Go 1.25 |
@@ -126,9 +126,9 @@ CI còn chạy `go mod tidy -diff`, `go mod verify`, test với race detector, b
 
 ## Migration hiện tại
 
-`migrations/000001_create_core_schema.sql` đang là bootstrap SQL chạy qua psql, tự quản lý transaction và bảng `schema_migrations`. File này **chưa phải Goose migration**. Không sửa file đã áp dụng để thêm annotation hay tự chạy lại qua Goose.
+`migrations/000001_create_core_schema.sql` là SQL baseline legacy bất biến; bản embed trong `internal/platform/database/legacy.sql` được Goose Go migration v1 thực thi trong transaction. Không sửa file đã áp dụng hoặc chạy baseline thủ công cho database mới.
 
-Khi tích hợp Goose: chọn version CLI cụ thể, thiết kế baseline/adoption cho database đã tồn tại, dùng metadata Goose riêng, kiểm thử cả database mới và database đã bootstrap, rồi chuyển migration tiếp theo sang định dạng Goose. Không tự migrate lúc API khởi động. Bước Dependency Management này chốt công cụ và boundary, chưa đổi schema hoặc cơ chế chạy migration.
+Goose runner dùng `goose_db_version`, hỗ trợ `up`, `status`, `adopt-legacy`; SQL migration mới nằm trong `internal/platform/database/schema/`. Compose chạy migrator riêng trước runtime. Test bao gồm fresh/adoption, ownership và role không có superuser. Xem [runbook](../migrations/README.md) cho provision, adoption và recovery. Không tự migrate trong API/indexer/worker.
 
 ## Nguồn tham khảo
 

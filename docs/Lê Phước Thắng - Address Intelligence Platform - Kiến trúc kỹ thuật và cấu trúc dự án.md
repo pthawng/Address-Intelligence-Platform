@@ -88,7 +88,7 @@ Module A → Internal implementation của Module B
 | Cache | Không thuộc baseline MVP; chỉ bổ sung Redis sau benchmark |
 | Search Engine | Elasticsearch |
 | Message Broker | Không thuộc baseline MVP |
-| Database Migration | Goose v3 (đã chốt; runner chưa tích hợp) |
+| Database Migration | Goose v3 (runner riêng trong cmd/migrate; xem migrations/README.md) |
 | API Specification | OpenAPI |
 | Serialization | JSON / Protobuf |
 | Observability | OpenTelemetry |
