@@ -121,3 +121,9 @@ func Failure(service, version string, err error) {
 	logger := New(Options{Service: service, Environment: environment, Version: version})
 	logger.Error("runtime failed", "error_code", "runtime_failed", "error", err)
 }
+
+// RequestID returns the server-generated ID, or empty outside HTTP.
+func RequestID(ctx context.Context) string {
+	c, _ := ctx.Value(correlationKey{}).(correlation)
+	return c.requestID
+}

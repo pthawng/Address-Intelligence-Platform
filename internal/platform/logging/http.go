@@ -11,12 +11,23 @@ import (
 // HTTP emits one completion event. Incoming request IDs are intentionally not
 // trusted; the server returns its own ID. Query strings and bodies are omitted.
 func HTTP(logger *slog.Logger, next http.Handler) http.Handler {
+	return RequestIDMiddleware(Access(logger, next))
+}
+
+func RequestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var id [16]byte
 		_, _ = rand.Read(id[:]) // crypto/rand.Read cannot fail on supported Go versions.
 		requestID := hex.EncodeToString(id[:])
 		r = r.WithContext(WithRequestID(r.Context(), requestID))
 		w.Header().Set("X-Request-ID", requestID)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Access expects request ID and trace context to have been attached upstream.
+func Access(logger *slog.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := &responseWriter{ResponseWriter: w}
 		start := time.Now()
 		completed := false
