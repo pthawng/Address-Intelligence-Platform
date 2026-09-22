@@ -15,6 +15,18 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_PASSWORD: integration-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v6
         with:
@@ -42,7 +54,13 @@ jobs:
         run: go test -race -count=1 ./...
       - name: Build
         run: go build ./...
+      - name: PostgreSQL migrations and runtime integration
+        env:
+          TEST_DATABASE_URL: postgres://postgres:integration-test-only@localhost:5432/postgres?sslmode=disable
+        run: go test -race -count=1 ./test/integration
       - name: Validate local Compose configuration
-        run: docker compose --env-file .env.docker.example --profile worker config --quiet
+        run: |
+          docker compose --env-file docker/.env.example -f docker/compose.yaml --profile worker config --quiet
+          docker compose --env-file docker/.env.example -f docker/compose.yaml -f docker/compose.dev.yaml --profile worker config --quiet
       - name: Vulnerability scan
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...

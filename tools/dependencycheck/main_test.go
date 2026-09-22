@@ -123,3 +123,24 @@ func TestMalformedSourceFailsClosed(t *testing.T) {
 		t.Fatal("invalid Go source must fail")
 	}
 }
+
+func TestErrorFoundationBoundaries(t *testing.T) {
+	p := testPolicy(t)
+	const base = "address-intelligence-platform/internal/platform/"
+	for _, layer := range []string{"domain", "application", "contract", "transport/http", "infrastructure"} {
+		from := "internal/place/" + layer
+		if reason := p.checkImport("address-intelligence-platform", from, base+"apperror", false, nil); reason != "" {
+			t.Fatal(layer, reason)
+		}
+		reason := p.checkImport("address-intelligence-platform", from, base+"httpserver", false, nil)
+		allowed := layer == "transport/http" || layer == "infrastructure"
+		if (reason == "") != allowed {
+			t.Fatal(layer, reason)
+		}
+	}
+	for _, dep := range []string{"net/http", "log/slog", base + "httpserver", base + "database"} {
+		if p.checkImport("address-intelligence-platform", "internal/platform/apperror", dep, false, map[string]bool{"net/http": true, "log/slog": true}) == "" {
+			t.Fatal("impure error dependency allowed:", dep)
+		}
+	}
+}

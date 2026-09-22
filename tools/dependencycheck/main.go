@@ -96,6 +96,20 @@ func (p policy) classify(pkg string) location {
 
 func (p policy) checkImport(module, importer, imported string, test bool, std map[string]bool) string {
 	source := p.classify(importer)
+	// Shared errors cannot acquire I/O or other platform dependencies.
+	if source.kind == "platform" && source.component == "apperror" {
+		if test && imported == "testing" {
+			return ""
+		}
+		if std[imported] {
+			for _, allowed := range p.PureStandardLibrary {
+				if within(imported, allowed) {
+					return ""
+				}
+			}
+		}
+		return "shared errors must depend only on pure standard-library packages"
+	}
 	if std[imported] {
 		if (within(imported, "testing") || imported == "net/http/httptest") && !test {
 			return "standard-library test dependency imported by production code"
@@ -149,10 +163,13 @@ func (p policy) checkImport(module, importer, imported string, test bool, std ma
 			}
 		case "module":
 			if target.kind == "platform" {
+				if target.component == "apperror" {
+					return ""
+				}
 				if source.layer == "infrastructure" {
 					return ""
 				}
-				if source.layer == "transport" && contains([]string{"logging", "telemetry"}, target.component) {
+				if source.layer == "transport" && contains([]string{"httpserver", "logging", "telemetry"}, target.component) {
 					return ""
 				}
 			}
@@ -247,6 +264,7 @@ func scan(root, module string, p policy, std map[string]bool) ([]string, error) 
 			violations = append(violations, rel+": module root is documentation-only; use an explicit layer")
 		}
 		test := strings.HasSuffix(filename, "_test.go")
+		violations = append(violations, checkContexts(file, set, rel)...)
 		if loc.kind == "test" && !test && len(file.Decls) != 0 {
 			violations = append(violations, rel+": integration/e2e helpers must use _test.go")
 		}

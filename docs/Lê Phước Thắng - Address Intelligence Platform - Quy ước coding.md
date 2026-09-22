@@ -16,6 +16,14 @@
 
 Quy tắc bootstrap: `main` chỉ xử lý entry point/exit code; signal context nằm trong hàm trả lỗi để defer chạy trước `os.Exit`. Wiring và lifecycle thuộc `internal/bootstrap`, dependency được truyền qua constructor. Tài nguyên mở trong `App.Run` phải đăng ký cleanup ngay, đóng theo thứ tự ngược và dùng chung shutdown deadline. Không thay đổi logger global. Xem [Application Bootstrap](Application%20Bootstrap.md).
 
+## Context Foundation
+
+Context cho I/O và usecase phải là tham số đầu `ctx context.Context`; truyền từ
+`r.Context()` tới repository/driver, không tạo root context trong repository.
+Không lưu context trong service struct. Hàm thuần không cần context. Xem
+[Context Foundation](<Lê Phước Thắng - Address Intelligence Platform - Context Foundation.md>).
+`go run ./tools/dependencycheck` kiểm tra thêm quy tắc context trong CI.
+
 ## Commit message
 
 Mọi commit của dự án phải theo định dạng:
