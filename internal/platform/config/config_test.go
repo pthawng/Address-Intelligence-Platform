@@ -13,7 +13,7 @@ func cleanEnvironment(t *testing.T) {
 	for _, key := range []string{
 		"APP_ENV", "HTTP_ADDRESS", "HTTP_PORT", "DATABASE_URL", "ELASTICSEARCH_URL", "SEARCH_URL",
 		"OUTBOX_POLL_INTERVAL", "SHUTDOWN_TIMEOUT", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT",
-		"HTTP_READ_HEADER_TIMEOUT", "HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT",
+		"HTTP_READ_HEADER_TIMEOUT", "HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT", "HTTP_MAX_HEADER_BYTES", "HTTP_REQUEST_TIMEOUT", "HTTP_CORS_ORIGINS", "HTTP_RATE_PER_SECOND", "HTTP_RATE_BURST",
 		"DATABASE_HOST", "DATABASE_PORT", "DATABASE_NAME", "DATABASE_USER", "DATABASE_PASSWORD", "DATABASE_SSLMODE",
 	} {
 		t.Setenv(key, "")
@@ -192,7 +192,7 @@ func TestLoadOverrides(t *testing.T) {
 		"DATABASE_URL":      "postgresql://user:password@localhost:5432/app",
 		"ELASTICSEARCH_URL": "https://search.example:9243", "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318",
 		"OUTBOX_POLL_INTERVAL": "250ms", "SHUTDOWN_TIMEOUT": "20s",
-		"HTTP_READ_HEADER_TIMEOUT": "2s", "HTTP_READ_TIMEOUT": "3s", "HTTP_WRITE_TIMEOUT": "4s", "HTTP_IDLE_TIMEOUT": "5s",
+		"HTTP_READ_HEADER_TIMEOUT": "2s", "HTTP_READ_TIMEOUT": "3s", "HTTP_WRITE_TIMEOUT": "4s", "HTTP_IDLE_TIMEOUT": "5s", "HTTP_REQUEST_TIMEOUT": "2s",
 	} {
 		t.Setenv(key, value)
 	}
@@ -275,6 +275,57 @@ func TestDatabaseRequirement(t *testing.T) {
 			}
 			if environment == "test" && cfg.LogLevel != slog.LevelInfo {
 				t.Fatal("test must default to info logging")
+			}
+		})
+	}
+}
+
+func TestHTTPHeaderLimit(t *testing.T) {
+	cleanEnvironment(t)
+	cfg, err := LoadFor(API)
+	if err != nil || cfg.HTTPMaxHeaderBytes != 32768 {
+		t.Fatalf("default header limit: %v %v", cfg.HTTPMaxHeaderBytes, err)
+	}
+	t.Setenv("HTTP_MAX_HEADER_BYTES", "65536")
+	cfg, err = LoadFor(API)
+	if err != nil || cfg.HTTPMaxHeaderBytes != 65536 {
+		t.Fatal("override failed", err)
+	}
+	cfg.HTTPMaxHeaderBytes = 0
+	if cfg.Validate() == nil {
+		t.Fatal("manual zero accepted")
+	}
+	for _, value := range []string{"0", "-1", "bad", "999999999999999999999999"} {
+		t.Setenv("HTTP_MAX_HEADER_BYTES", value)
+		if _, err := LoadFor(API); err == nil {
+			t.Fatal("invalid limit accepted")
+		}
+		for _, runtime := range []Runtime{Indexer, Worker} {
+			if _, err := LoadFor(runtime); err != nil {
+				t.Fatal("unused HTTP setting blocked runtime", err)
+			}
+		}
+	}
+}
+
+func TestMiddlewareSettings(t *testing.T) {
+	cleanEnvironment(t)
+	cfg, err := LoadFor(API)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.CORSOrigins != "http://localhost:3000" || cfg.HTTPRequestTimeout != 8*time.Second || cfg.HTTPRateBurst != 200 {
+		t.Fatal("invalid defaults")
+	}
+	for _, tc := range []struct{ key, value string }{{"HTTP_REQUEST_TIMEOUT", "0s"}, {"HTTP_REQUEST_TIMEOUT", "15s"}, {"HTTP_CORS_ORIGINS", "*"}, {"HTTP_CORS_ORIGINS", "https://host/path"}, {"HTTP_RATE_PER_SECOND", "0"}, {"HTTP_RATE_BURST", "bad"}} {
+		t.Run(tc.key+tc.value, func(t *testing.T) {
+			cleanEnvironment(t)
+			t.Setenv(tc.key, tc.value)
+			if _, err := LoadFor(API); err == nil {
+				t.Fatal("invalid middleware config accepted")
+			}
+			if _, err := LoadFor(Worker); err != nil {
+				t.Fatal("worker parsed HTTP settings", err)
 			}
 		})
 	}

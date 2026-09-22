@@ -17,6 +17,7 @@ type Config struct {
 	Environment           string
 	HTTPAddress           string
 	DatabaseURL           string
+	DatabasePool          DatabasePool
 	ElasticsearchURL      string
 	OutboxPollInterval    time.Duration
 	ShutdownTimeout       time.Duration
@@ -25,7 +26,12 @@ type Config struct {
 	HTTPReadTimeout       time.Duration
 	HTTPWriteTimeout      time.Duration
 	HTTPIdleTimeout       time.Duration
+	HTTPMaxHeaderBytes    int
 	OTLPEndpoint          string
+	HTTPRequestTimeout    time.Duration
+	CORSOrigins           string
+	HTTPRatePerSecond     int
+	HTTPRateBurst         int
 }
 
 type Runtime string
@@ -67,9 +73,30 @@ func LoadFor(runtime Runtime) (Config, error) {
 	}
 	// Keep the existing runtime names authoritative when both names are set.
 	if runtime.usesHTTP() {
+		originDefault := ""
+		if cfg.Environment == "development" || cfg.Environment == "test" {
+			originDefault = "http://localhost:3000"
+		}
+		cfg.CORSOrigins = value("HTTP_CORS_ORIGINS", originDefault)
+		cfg.HTTPRatePerSecond, err = strconv.Atoi(value("HTTP_RATE_PER_SECOND", "100"))
+		if err != nil {
+			return Config{}, fmt.Errorf("HTTP_RATE_PER_SECOND must be a positive integer")
+		}
+		cfg.HTTPRateBurst, err = strconv.Atoi(value("HTTP_RATE_BURST", "200"))
+		if err != nil {
+			return Config{}, fmt.Errorf("HTTP_RATE_BURST must be a positive integer")
+		}
+		cfg.HTTPMaxHeaderBytes, err = strconv.Atoi(value("HTTP_MAX_HEADER_BYTES", "32768"))
+		if err != nil || cfg.HTTPMaxHeaderBytes <= 0 {
+			return Config{}, fmt.Errorf("HTTP_MAX_HEADER_BYTES must be a positive integer")
+		}
 		cfg.HTTPAddress = value("HTTP_ADDRESS", ":"+value("HTTP_PORT", "8080"))
 	}
 	cfg.DatabaseURL, err = databaseURL()
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.DatabasePool, err = loadDatabasePool()
 	if err != nil {
 		return Config{}, err
 	}
@@ -108,6 +135,7 @@ func LoadFor(runtime Runtime) (Config, error) {
 		fallback time.Duration
 		target   *time.Duration
 	}{
+		{"HTTP_REQUEST_TIMEOUT", 8 * time.Second, &cfg.HTTPRequestTimeout},
 		{"HTTP_READ_HEADER_TIMEOUT", 5 * time.Second, &cfg.HTTPReadHeaderTimeout},
 		{"HTTP_READ_TIMEOUT", 10 * time.Second, &cfg.HTTPReadTimeout},
 		{"HTTP_WRITE_TIMEOUT", 15 * time.Second, &cfg.HTTPWriteTimeout},
@@ -137,6 +165,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("APP_ENV must be development, test, staging or production")
 	}
 	if c.runtime.usesHTTP() {
+		if c.HTTPMaxHeaderBytes <= 0 {
+			return fmt.Errorf("HTTP_MAX_HEADER_BYTES must be positive")
+		}
 		_, port, err := net.SplitHostPort(c.HTTPAddress)
 		if err != nil || !validPort(port) {
 			return fmt.Errorf("HTTP_ADDRESS (or HTTP_PORT) must specify host:port with port between 1 and 65535")
@@ -169,9 +200,31 @@ func (c Config) Validate() error {
 		{"HTTP_READ_TIMEOUT", c.HTTPReadTimeout, c.runtime.usesHTTP()},
 		{"HTTP_WRITE_TIMEOUT", c.HTTPWriteTimeout, c.runtime.usesHTTP()},
 		{"HTTP_IDLE_TIMEOUT", c.HTTPIdleTimeout, c.runtime.usesHTTP()},
+		{"HTTP_REQUEST_TIMEOUT", c.HTTPRequestTimeout, c.runtime.usesHTTP()},
 	} {
 		if setting.used && setting.value <= 0 {
 			return fmt.Errorf("%s must be positive", setting.key)
+		}
+	}
+	if c.runtime.usesHTTP() {
+		if c.HTTPRatePerSecond <= 0 {
+			return fmt.Errorf("HTTP_RATE_PER_SECOND must be positive")
+		}
+		if c.HTTPRateBurst <= 0 {
+			return fmt.Errorf("HTTP_RATE_BURST must be positive")
+		}
+		if c.HTTPRequestTimeout >= c.HTTPWriteTimeout {
+			return fmt.Errorf("HTTP_REQUEST_TIMEOUT must be shorter than HTTP_WRITE_TIMEOUT")
+		}
+		for _, origin := range strings.Split(c.CORSOrigins, ",") {
+			origin = strings.TrimSpace(origin)
+			if origin == "" {
+				continue
+			}
+			u, err := url.Parse(origin)
+			if err != nil || !validURL(origin, "http", "https") || u.User != nil || u.Path != "" || u.RawQuery != "" || strings.Contains(origin, "*") {
+				return fmt.Errorf("HTTP_CORS_ORIGINS must contain explicit http(s) origins")
+			}
 		}
 	}
 	return nil

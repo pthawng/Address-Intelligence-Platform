@@ -23,6 +23,7 @@ Nguồn triển khai: `internal/platform/config/`. API, indexer và worker gọi
 | `HTTP_READ_TIMEOUT` | `10s` | Duration dương; thời gian đọc toàn bộ HTTP request |
 | `HTTP_WRITE_TIMEOUT` | `15s` | Duration dương; thời gian ghi HTTP response |
 | `HTTP_IDLE_TIMEOUT` | `60s` | Duration dương; thời gian chờ request tiếp theo trên kết nối keep-alive |
+| `HTTP_MAX_HEADER_BYTES` | `32768` (32 KiB) | Positive integer; API request header limit; worker/indexer ignore |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | rỗng | Nếu có: URL HTTP/HTTPS hợp lệ; mới đọc/validate, chưa khởi tạo exporter |
 
 Các duration dùng cú pháp Go như `500ms`, `1s`, `2m`; từ chối số âm, 0, sai định dạng và overflow. Các URL không chấp nhận fragment. Kiểm tra URL chỉ xác nhận cú pháp, không xác nhận quyền truy cập, TLS hay kết nối dịch vụ.
@@ -60,17 +61,40 @@ go run ./cmd/api
 ## Docker Compose
 
 ```powershell
-Copy-Item .env.docker.example .env.docker
-docker compose --env-file .env.docker config --quiet
-docker compose --env-file .env.docker up --build -d
+Copy-Item docker/.env.example docker/.env
+docker compose --env-file docker/.env -f docker/compose.yaml -f docker/compose.dev.yaml config --quiet
+docker compose --env-file docker/.env -f docker/compose.yaml -f docker/compose.dev.yaml up --build -d
 ```
 
-`.env.docker` được Compose đọc; đây không phải tính năng dotenv của ứng dụng. `APP_ENV`, `OUTBOX_POLL_INTERVAL`, `SHUTDOWN_TIMEOUT` có mặc định trong Compose. Các biến log, HTTP timeout và OTLP được truyền qua `env_file` nếu khai báo; nếu thiếu, Go dùng mặc định nêu trên.
+`docker/.env` được Compose đọc; đây không phải tính năng dotenv của ứng dụng. `APP_ENV`, `OUTBOX_POLL_INTERVAL`, `SHUTDOWN_TIMEOUT` có mặc định trong Compose. Các biến log, HTTP timeout và OTLP được truyền qua `env_file` nếu khai báo; nếu thiếu, Go dùng mặc định nêu trên.
 
-Compose đặt `DATABASE_URL` rỗng để dùng trường riêng: host `postgres`, port `5432`, name/user/password lấy từ `POSTGRES_DB`/`POSTGRES_USER`/`POSTGRES_PASSWORD`, SSL mode `disable` cho local. Password không còn được ghép trực tiếp vào URL. Với password chứa `$` hoặc `#` trong `.env.docker`, dùng dấu nháy đơn để giữ nguyên giá trị, ví dụ `POSTGRES_PASSWORD='local$p@ss/#%'` (chỉ minh họa).
+Compose đặt `DATABASE_URL` rỗng để dùng trường riêng: host `postgres`, port `5432`, name/user/password lấy từ `POSTGRES_DB`/`POSTGRES_USER`/`POSTGRES_PASSWORD`, SSL mode `disable` cho local. Password không còn được ghép trực tiếp vào URL. Với password chứa `$` hoặc `#` trong `docker/.env`, dùng dấu nháy đơn để giữ nguyên giá trị, ví dụ `POSTGRES_PASSWORD='local$p@ss/#%'` (chỉ minh họa).
 
 Compose đặt `ELASTICSEARCH_URL=http://elasticsearch:9200`. API luôn lắng nghe `HTTP_ADDRESS=:8080` bên trong container; `API_PORT` chỉ đổi port công bố trên máy host. Các giá trị trong `environment` của Compose ưu tiên hơn `env_file`.
 
 `HEALTHCHECK_URL` chỉ do lệnh `api healthcheck` đọc, mặc định `http://127.0.0.1:8080/health/live`, HTTP client timeout cố định `2s`; không thuộc `config.Load()`. Khi chạy local với HTTP port khác, phải đặt biến này nếu dùng lệnh healthcheck.
 
 `stop_grace_period` của backend hiện là `15s`; nếu tăng `SHUTDOWN_TIMEOUT`, cần tăng thời gian này để container đủ thời gian shutdown. Compose hiện phục vụ local development; không phải cấu hình production.
+
+
+## Middleware configuration
+
+| Variable | Default | Scope |
+| --- | --- | --- |
+| HTTP_REQUEST_TIMEOUT | 8s | API; positive and below HTTP_WRITE_TIMEOUT |
+| HTTP_CORS_ORIGINS | http://localhost:3000 in development/test, empty otherwise | API; comma-separated exact origins |
+| HTTP_RATE_PER_SECOND | 100 | API; positive integer |
+| HTTP_RATE_BURST | 200 | API; positive integer |
+
+OTEL_EXPORTER_OTLP_ENDPOINT now enables the API OTLP/HTTP trace exporter when
+nonempty. Worker/indexer still do not export telemetry. No external collector is
+configured by default. See [Middleware Foundation](../docs/middleware.md).
+
+## Migration credentials
+
+`cmd/migrate` uses only `MIGRATION_DATABASE_URL` or split `MIGRATION_DATABASE_HOST`,
+`PORT`, `NAME`, `USER`, `PASSWORD`, `SSLMODE` (all with the `MIGRATION_DATABASE_`
+prefix). URL takes precedence; split passwords remain raw and SSL defaults to
+`verify-full`. The CLI does not read .env files. Compose supplies these fields using
+`MIGRATION_PASSWORD`, separately from runtime credentials. See the
+[database runbook](../migrations/README.md) for provision/adoption/recovery.
