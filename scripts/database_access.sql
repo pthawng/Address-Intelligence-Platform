@@ -12,7 +12,8 @@ BEGIN
             'data_sources','administrative_units','administrative_unit_aliases',
             'administrative_changes','administrative_change_members','places',
             'place_aliases','place_admin_relations','place_relations','geo_boundaries',
-            'place_geometries','delivery_points','external_references','outbox_events'])
+            'place_geometries','delivery_points','external_references','outbox_events',
+            'source_records'])
     LOOP
         EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO address_runtime', item.relname);
         -- Only sequences owned by application columns, including identity columns.

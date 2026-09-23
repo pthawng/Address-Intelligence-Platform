@@ -8,6 +8,9 @@ and a PostgreSQL session lock. Runtime uses pgxpool and never executes migration
 - `migrations/000001_create_core_schema.sql` is the immutable legacy baseline.
 - `internal/platform/database/legacy.sql` is its embedded copy, checked by a test.
 - New Goose SQL migrations belong in `internal/platform/database/schema/`.
+- Source snapshots under `docs/data/` are data inputs, not executable schema
+  migrations. Never execute their legacy `admin_units` INSERT statements against
+  the place-centric schema.
 - `public.goose_db_version` is authoritative. The old `schema_migrations` ledger
   is retained for legacy adoption only.
 - Never edit deployed migrations. Add a numbered migration and update
@@ -105,3 +108,31 @@ backup retention/RPO/RTO in the deployment environment; local volumes are not ba
 Use `make db-verify` for rollback-only invariant checks. See
 [integration test instructions](../test/integration/README.md) for a disposable
 PostGIS test server; never run that suite against a shared/data-bearing server.
+
+## SuperShip source snapshots (schema v3)
+
+Migration v3 adds `source_records` as immutable input/provenance storage. After a
+backup and a successful `migrate up`, run from the repository root using the
+same `MIGRATION_DATABASE_*` environment as the migrator:
+
+```powershell
+go run ./cmd/importdata -dir docs/data
+```
+
+The importer parses exactly six checked-in SQL snapshots but does **not** execute
+their SQL. It verifies the source row counts, SHA-256 snapshot versions, unit
+types, unique administrative codes and parent relationships, then stages every
+record in one serializable transaction. Level 1–3 records become canonical
+`administrative_units` with `external_references` and outbox events in that same
+transaction. The 2-level snapshot is marked `ACTIVE`; the 3-level historical
+snapshot is marked `INACTIVE`. The source files have no effective dates, so the
+import does not invent `valid_from` or `valid_to`.
+
+All 171,291 level-4 records remain in `source_records`: their parent IDs do not
+match an administrative unit in these snapshots, their codes can collide, and
+the file mixes roads and POIs. Seven rows with empty code/name are marked
+`INVALID`; the rest are `UNRESOLVED`. Do not publish them as canonical Places
+until classification and parent mapping have been reviewed. Re-running the same
+snapshots is a no-op; a changed checksum or partial import fails closed for
+investigation. Source import is a distinct operator step, never an automatic
+side effect of application startup or a schema migration.

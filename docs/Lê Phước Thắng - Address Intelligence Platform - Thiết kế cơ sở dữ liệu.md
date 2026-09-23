@@ -4,7 +4,7 @@
 > **Hệ thống:** Address Intelligence Platform  
 > **Tác giả:** Lê Phước Thắng  
 > **Trạng thái:** Design Baseline  
-> **Phiên bản:** 0.3.0
+> **Phiên bản:** 0.4.0
 
 ## Document Control
 
@@ -646,7 +646,21 @@ SUPERSHIP_INTERNAL
 DELIVERY_DERIVED
 ```
 
-#### 6.7.2 `external_references`
+#### 6.7.2 `source_records`
+
+Lưu nguyên bản các dòng nhận từ dataset trước khi đối soát. `source_id` trỏ tới
+`data_sources`; `source_line` giữ vị trí trong snapshot có SHA-256 tại
+`data_sources.version`. Cặp `(source_id, source_line)` là duy nhất. `external_id`,
+`raw_name`, `raw_level`, `raw_parent_id` và `area_type` giữ giá trị đầu vào, không
+được dùng làm khóa chính canonical. `resolution_status` phân biệt `STAGED`,
+`LINKED`, `UNRESOLVED` và `INVALID`; hai FK nullable tới Administrative Unit và
+Place chỉ có đúng một giá trị khi đã `LINKED`.
+
+Dữ liệu SuperShip LEVEL_4 là nguồn đường/POI, không phải đơn vị hành chính.
+Chỉ gắn Place và quan hệ hành chính sau khi phân loại, đối soát mã cha và xử lý
+trùng mã. Dòng sai vẫn được giữ để audit, không âm thầm bỏ qua.
+
+#### 6.7.3 `external_references`
 
 Lưu identity của entity trong hệ thống nguồn để phục vụ incremental sync, reconciliation và audit. Không dùng OSM ID hoặc external ID làm primary key của canonical entity.
 
@@ -1333,6 +1347,7 @@ Các ngưỡng dưới đây là **mục tiêu thiết kế cần được bench
 | `place_geometries`              | Geographic             | Geometry đầy đủ của place                                  |
 | `delivery_points`               | Geographic / Logistics | Entrance/delivery/pickup/access point đã tổng hợp/xác minh |
 | `data_sources`                  | Governance             | Nguồn dataset và provenance                                |
+| `source_records`                | Governance             | Dòng nguồn/staging và trạng thái phân giải                  |
 | `external_references`           | Governance             | Mapping canonical entity ↔ external identity               |
 | `outbox_events`                 | Operational            | Sự kiện durable cho transactional outbox polling           |
 | `schema_migrations`             | Operational            | Phiên bản migration đã áp dụng                              |
@@ -1382,7 +1397,8 @@ Trong giai đoạn `0.x`, thiết kế vẫn ở **initial development** và có
 |:--------|:-----------|:-----------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `0.1.0` | 19/09/2026 | Baseline   | Baseline đầu tiên của Database Design Specification                                                                                                                  |
 | `0.2.0` | 20/09/2026 | Superseded | Hoàn thiện temporal integrity, explicit FK cho external references, geometry/geography guidance, search-context indexing, sync strategy và chuẩn hóa Markdown tables |
-| `0.3.0` | 20/09/2026 | Current    | Chốt place-centric MVP, Elasticsearch duy nhất, transactional outbox polling; Redis, broker, CDC và LISTEN/NOTIFY không thuộc baseline MVP                           |
+| `0.3.0` | 20/09/2026 | Superseded | Chốt place-centric MVP, Elasticsearch duy nhất, transactional outbox polling; Redis, broker, CDC và LISTEN/NOTIFY không thuộc baseline MVP                           |
+| `0.4.0` | 23/09/2026 | Current | Bổ sung `source_records` để giữ nguyên dữ liệu nguồn, trạng thái đối soát và liên kết canonical; tách nguồn LEVEL_4 khỏi Administrative Unit |
 
 > Khi schema và architectural contract được duyệt làm production baseline, promote lên `1.0.0`.
 
