@@ -19,3 +19,6 @@ drift rejection, concurrent migration, rollback, serializable hierarchy writes,
 non-superuser migrator, ownership transfer, repeatable grant repair and runtime
 denial of DDL/ledger writes. SQL invariant checks live in
 `scripts/verify_database.sql`.
+The source-import integration test also checks all six snapshots, canonical
+administrative hierarchy, unresolved/invalid level-4 records, provenance,
+outbox counts and idempotent reruns.
