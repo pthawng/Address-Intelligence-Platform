@@ -69,4 +69,4 @@ request-specific fields absent on startup/background events; do not manufacture
 empty IDs or zero HTTP fields to force every event into the same shape.
 
 Current middleware behavior (panic stack traces, CORS, timeout, rate limiting,
-tracing and metrics) is documented in [Middleware Foundation](middleware.md).
+tracing and metrics) is documented in [Middleware Foundation](<Lê Phước Thắng - Address Intelligence Platform - Middleware Foundation.md>).

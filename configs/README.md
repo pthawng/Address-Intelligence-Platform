@@ -88,7 +88,7 @@ Compose đặt `ELASTICSEARCH_URL=http://elasticsearch:9200`. API luôn lắng n
 
 OTEL_EXPORTER_OTLP_ENDPOINT now enables the API OTLP/HTTP trace exporter when
 nonempty. Worker/indexer still do not export telemetry. No external collector is
-configured by default. See [Middleware Foundation](../docs/middleware.md).
+configured by default. See [Middleware Foundation](<../docs/Lê Phước Thắng - Address Intelligence Platform - Middleware Foundation.md>).
 
 ## Migration credentials
 

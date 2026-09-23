@@ -2,7 +2,7 @@
 
 ## Dependency và ranh giới module
 
-Áp dụng [Quản lý dependency](Quản%20lý%20dependency.md) và [`dependency-policy.json`](../dependency-policy.json) cho mọi Go package.
+Áp dụng [Quản lý dependency](<Lê Phước Thắng - Address Intelligence Platform - Quản lý dependency.md>) và [`dependency-policy.json`](../dependency-policy.json) cho mọi Go package.
 
 - Application không import infrastructure, transport, driver hoặc framework.
 - Module chỉ giao tiếp qua `contract`; không import application/domain/repository implementation của module khác.
@@ -14,7 +14,7 @@
 
 ## Application Bootstrap
 
-Quy tắc bootstrap: `main` chỉ xử lý entry point/exit code; signal context nằm trong hàm trả lỗi để defer chạy trước `os.Exit`. Wiring và lifecycle thuộc `internal/bootstrap`, dependency được truyền qua constructor. Tài nguyên mở trong `App.Run` phải đăng ký cleanup ngay, đóng theo thứ tự ngược và dùng chung shutdown deadline. Không thay đổi logger global. Xem [Application Bootstrap](Application%20Bootstrap.md).
+Quy tắc bootstrap: `main` chỉ xử lý entry point/exit code; signal context nằm trong hàm trả lỗi để defer chạy trước `os.Exit`. Wiring và lifecycle thuộc `internal/bootstrap`, dependency được truyền qua constructor. Tài nguyên mở trong `App.Run` phải đăng ký cleanup ngay, đóng theo thứ tự ngược và dùng chung shutdown deadline. Không thay đổi logger global. Xem [Application Bootstrap](<Lê Phước Thắng - Address Intelligence Platform - Application Bootstrap.md>).
 
 ## Context Foundation
 
@@ -45,4 +45,31 @@ feat(config): add runtime-specific configuration validation
 fix(config): encode database credentials safely
 docs(conventions): document commit message format
 ci(checks): add Go validation workflow
+```
+
+
+## Quy tắc đặt tên tài liệu
+
+Quy tắc này áp dụng cho mọi tài liệu dự án mới và khi đổi tên tài liệu hiện có, kể cả tài liệu do công cụ hoặc AI tạo.
+
+- Tài liệu thiết kế, kiến trúc, nghiệp vụ, foundation, kế hoạch và worklog đặt trong `docs/` theo đúng mẫu:
+
+  ```text
+  Lê Phước Thắng - Address Intelligence Platform - <Tên tài liệu>.md
+  ```
+
+- Giữ nguyên tiền tố, dấu tiếng Việt, khoảng trắng và dấu phân cách ` - `. Tên chủ đề ngắn gọn, mô tả nội dung; dùng tiếng Việt có dấu hoặc thuật ngữ đã thống nhất như `HTTP Server Foundation`.
+- Không dùng tên không dấu, snake_case, tên tạm như `final`, `new`, `copy` hoặc gắn ngày/version vào tên file. Version, trạng thái và ngày cập nhật đặt trong nội dung khi tài liệu có quản lý phiên bản.
+- Trước khi tạo file, kiểm tra xem chủ đề đã có tài liệu chưa; ưu tiên cập nhật tài liệu hiện có, không tạo bản song song chỉ khác tên.
+- Ngoại lệ: `README.md` giữ nguyên tại root hoặc thư mục để hướng dẫn sử dụng/vận hành; `AGENTS.md`, `GEMINI.md`, `SKILL.md` và các tên đặc biệt do công cụ/quy trình yêu cầu giữ tên chuẩn của chúng. File dữ liệu, cấu hình, source code, migration và tài liệu bên thứ ba không áp dụng tiền tố này.
+- Liên kết nội bộ dùng đường dẫn tương đối. Với tên có khoảng trắng, dùng `[Nhãn](<đường dẫn>)` hoặc URL-encode đường dẫn; không dùng đường dẫn tuyệt đối trên máy cá nhân hay `file://`.
+- Khi đổi tên: cập nhật toàn bộ liên kết/tham chiếu hiện hành, mục lục và bảng tài liệu liên quan; kiểm tra đích liên kết tồn tại. Nhật ký lịch sử có thể giữ tên cũ nếu ghi rõ đó là tên tại thời điểm ghi nhận.
+- Trước khi hoàn tất: kiểm tra tên mới đúng mẫu, không có bản trùng, liên kết không hỏng và ghi nhận thay đổi tài liệu đáng kể vào backlog.
+
+Ví dụ:
+
+```text
+docs/Lê Phước Thắng - Address Intelligence Platform - Kiến trúc xử lý địa chỉ Việt Nam.md
+docs/Lê Phước Thắng - Address Intelligence Platform - Middleware Foundation.md
+docker/README.md
 ```

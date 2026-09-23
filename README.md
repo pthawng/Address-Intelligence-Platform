@@ -144,7 +144,7 @@ Runtime logs, slog structure, and HTTP access logging policy are documented in
 
 ### Middleware Foundation
 
-See [Middleware Foundation](docs/middleware.md) for CORS (localhost:3000),
+See [Middleware Foundation](<docs/Lê Phước Thắng - Address Intelligence Platform - Middleware Foundation.md>) for CORS (localhost:3000),
 recovery with stack traces, timeout, rate limiting, OIDC auth integration,
 OpenTelemetry tracing and development metrics at `/metrics`.
 
@@ -155,3 +155,10 @@ HTTP handlers forward `r.Context()`; repositories must not create new root conte
 The existing dependency check also enforces context syntax and root ownership.
 See [Context Foundation](<docs/Lê Phước Thắng - Address Intelligence Platform - Context Foundation.md>)
 for cancellation, deadlines, worker lifecycles and the limits of static checking.
+
+
+### Quy tắc tài liệu
+
+Tài liệu chuyên đề trong `docs/` dùng tên `Lê Phước Thắng - Address Intelligence Platform - <Tên tài liệu>.md`. Xem [quy tắc đặt tên và ngoại lệ](<docs/Lê Phước Thắng - Address Intelligence Platform - Quy ước coding.md>) trước khi tạo tài liệu mới.
+
+- [Kiến trúc xử lý địa chỉ Việt Nam (HLD)](<docs/Lê Phước Thắng - Address Intelligence Platform - Kiến trúc xử lý địa chỉ Việt Nam.md>)

@@ -111,4 +111,4 @@ JSON responses now use the [Standard API Response](Lê%20Phước%20Thắng%20-%
 JSON wraps its data; use Success for an optional message or Paginated for lists.
 
 Current middleware behavior (panic stack traces, CORS, timeout, rate limiting,
-tracing and metrics) is documented in [Middleware Foundation](middleware.md).
+tracing and metrics) is documented in [Middleware Foundation](<Lê Phước Thắng - Address Intelligence Platform - Middleware Foundation.md>).
