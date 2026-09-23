@@ -6,7 +6,7 @@
 |---|---|
 | Tên tài liệu | Kiến trúc xử lý địa chỉ Việt Nam |
 | Dự án | Address Intelligence Platform |
-| Tác giả | Lê Phúc Thắng |
+| Tác giả | Lê Phước Thắng |
 | Loại tài liệu | High-Level Design (HLD) / Domain Architecture |
 | Phiên bản | 1.1 |
 | Trạng thái | HLD đã đối chiếu baseline place-centric; chi tiết triển khai được đặc tả theo từng phase |
@@ -504,5 +504,5 @@ Ví dụ: vấn đề *địa chỉ trùng tên gây chọn sai điểm giao* �
 
 | Version | Ngày | Người cập nhật | Nội dung |
 |---|---|---|---|
-| 1.1 | 23/09/2026 | Lê Phúc Thắng | Đồng bộ place-centric, cache tùy chọn, module hiện có và ngữ nghĩa API; đưa outbox/indexer về đúng thứ tự, làm rõ phạm vi/kết quả P0 ở mức HLD |
-| 1.0 | 22/09/2026 | Lê Phúc Thắng | Khởi tạo thiết kế xử lý địa chỉ Việt Nam: online/offline pipeline, lịch sử hành chính, entity resolution, confidence, chất lượng và kế hoạch triển khai |
+| 1.1 | 23/09/2026 | Lê Phước Thắng | Đồng bộ place-centric, cache tùy chọn, module hiện có và ngữ nghĩa API; đưa outbox/indexer về đúng thứ tự, làm rõ phạm vi/kết quả P0 ở mức HLD |
+| 1.0 | 22/09/2026 | Lê Phước Thắng | Khởi tạo thiết kế xử lý địa chỉ Việt Nam: online/offline pipeline, lịch sử hành chính, entity resolution, confidence, chất lượng và kế hoạch triển khai |

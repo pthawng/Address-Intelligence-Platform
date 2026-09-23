@@ -6,9 +6,9 @@
 | **Tên dự án** | Address Intelligence Platform |
 | **Tên tài liệu** | Backlog và Nhật ký công việc |
 | **Developer** | Lê Phước Thắng |
-| **Phiên bản** | `v2.4.2` |
+| **Phiên bản** | `v2.4.3` |
 | **Trạng thái** | Active Baseline MVP |
-| **Ngày cập nhật** | 23/09/2026 23:04 |
+| **Ngày cập nhật** | 23/09/2026 23:59 |
 
 > **Quy ước ghi chép nhật ký công việc:**  
 > - **Sắp xếp:** Tất cả các công việc được sắp xếp theo thời gian giảm dần (từ **MỚI NHẤT** đến **CŨ NHẤT**).  
@@ -21,6 +21,7 @@
 
 | STT | Thời gian (ngày giờ, phút) | Công việc thực hiện | Chi tiết công việc | Dev thực hiện | Trạng thái |
 |:---:|:---:|---|---|:---:|:---:|
+| **27** | `23/09/2026 23:59` | Nạp snapshot nguồn theo mô hình place-centric | Thêm Goose v3 `source_records` và importer đọc sáu file SQL legacy theo checksum, không thực thi INSERT vào `admin_units`. Đã backup trước/sau, restore thử cả hai; nạp 186.581 dòng vào DB local trong một transaction: 15.290 đơn vị hành chính cấp 1–3 có external reference/outbox; 171.284 dòng LEVEL_4 chờ đối soát và 7 dòng mã/tên rỗng giữ trạng thái INVALID. Chạy lại no-op, test tích hợp PostGIS, kiểm tra quyền runtime và API readiness 200. Chưa nạp Place từ LEVEL_4. | Lê Phước Thắng | `Hoàn thành trong phạm vi nêu rõ` |
 | **26** | `23/09/2026 23:04` | Hoàn tất DB-01 trên database local | Tạo pg_dump custom, snapshot nội dung và checksum; restore và adopt thử trên PostGIS tạm, đối chiếu dữ liệu, rồi provision `address_migrator`/`address_runtime`, chuyển ownership theo allowlist và adopt legacy v1 → Goose v2 trên database local. Xoay credential DBA mẫu sang mật khẩu mạnh; runtime bị chặn DDL/ghi ledger. Invariant SQL, API readiness 200 và kết nối của API/indexer/worker bằng runtime role đã kiểm chứng sau khi Compose recreate. Backup lưu trong `data/backups/` (Git bỏ qua). | Lê Phước Thắng | `Hoàn thành` |
 | **25** | `23/09/2026 00:25` | Chuẩn hóa tên và quy tắc tài liệu | Đổi tên HLD xử lý địa chỉ Việt Nam và Middleware Foundation theo tiền tố chung; sửa liên kết cũ, cập nhật bảng tham chiếu và README. Bổ sung quy tắc đặt tên, ngoại lệ README/tool files trong Quy ước coding; đưa hướng dẫn vào AGENTS.md và GEMINI.md để áp dụng cho tài liệu mới. | Lê Phước Thắng | `Hoàn thành` |
 | **24** | `23/09/2026 00:05` | Commit và push foundation lên main | Đã push 12 commit từ `9c132b1` đến `fea1524` lên `origin/main`, đúng định dạng `type(scope): description`; kiểm tra từng commit theo tổng dòng thêm + xóa, lớn nhất 966 dòng, không vượt 999. | Lê Phước Thắng | `Hoàn thành` |
@@ -57,6 +58,7 @@
 | **DB-01 / P0** | `23/09/2026 23:04` | Áp dụng setup vào database local | Đã hoàn tất backup/restore thử, provision role, chuyển ownership, adopt schema v2, reconcile quyền và xác nhận readiness/invariant. Xem nhật ký mục 26 và migration runbook. | Lê Phước Thắng | `Hoàn thành` |
 | **DATA-01 / P1** | `23/09/2026 00:13` | Hoàn thiện persistence cho luồng nghiệp vụ đầu tiên | Thiết lập sqlc, query và repository PostgreSQL theo từng module; domain/application giữ interface riêng, geometry PostGIS được map tại infrastructure. Chốt transaction boundary và retry có giới hạn cho lỗi serialization/deadlock; không đặt side effect bên ngoài DB trong callback retry. | Lê Phước Thắng | `Chưa bắt đầu` |
 | **BIZ-01 / P1** | `23/09/2026 00:13` | Triển khai nghiệp vụ Data Source | Chốt domain rules, use case tạo/cập nhật/truy vấn nguồn dữ liệu, repository và API; kiểm thử validation, trùng source code và provenance phục vụ Place. | Lê Phước Thắng | `Chưa bắt đầu` |
+| **DATA-02 / P1** | `23/09/2026 23:59` | Đối soát nguồn LEVEL_4 trước khi nạp Place | Phân loại road/POI có bằng chứng, giải quyết mã trùng và 7 dòng rỗng; tìm mapping mã cha GHTK sang administrative unit hiện hành. Chỉ liên kết Place sau khi đối soát, giữ raw record chưa đủ căn cứ ở trạng thái unresolved và ghi canonical + outbox nhất quán. | Lê Phước Thắng | `Chưa bắt đầu` |
 | **BIZ-02 / P1** | `23/09/2026 00:13` | Triển khai Place và transactional outbox | Xây dựng luồng tạo/cập nhật Place xuyên suốt domain → use case → repository → API; kiểm tra hierarchy/lifecycle, ghi canonical data và outbox event trong cùng transaction, xác định revision/idempotency và chứng minh rollback không để lại dữ liệu/event lệch nhau. | Lê Phước Thắng | `Chưa bắt đầu` |
 | **IDX-01 / P1** | `23/09/2026 00:13` | Triển khai outbox indexer sang Elasticsearch | Hoàn thiện polling/claim, retry/backoff, xử lý lock hết hạn, idempotency, chống stale revision, shutdown và khả năng reindex. Indexer hiện mới là skeleton, chưa xử lý event thực tế. | Lê Phước Thắng | `Chưa bắt đầu` |
 | **API-01 / P2** | `23/09/2026 00:13` | Triển khai search và autocomplete MVP | Chốt mapping/query Elasticsearch, chuẩn hóa tên và alias theo yêu cầu MVP; xây dựng application contracts, API và response, có test kết quả và eventual consistency sau cập nhật Place. | Lê Phước Thắng | `Chưa bắt đầu` |
@@ -66,12 +68,12 @@
 
 # 3. Tổng kết tiến độ
 
-- **Tổng số hạng mục đã ghi nhận hoàn thành:** 26, trong đó các hạng mục foundation được đánh dấu rõ phạm vi code và kiểm chứng.
-- **Tổng số đầu việc còn lại được lập trong đợt cập nhật này:** 6; đây là backlog ưu tiên để bắt đầu nghiệp vụ, không phải toàn bộ phạm vi MVP.
-- **Trạng thái hiện tại:** Foundation đủ để phát triển nghiệp vụ MVP. Chưa có luồng nghiệp vụ hoàn chỉnh chạy xuyên suốt; sqlc/repository, Data Source/Place use case, outbox processor và search implementation còn ở backlog.
-- **Trạng thái triển khai database:** Đã adopt schema v2 trên database local sau backup và restore thử; dữ liệu legacy được đối chiếu không đổi. API/indexer/worker kết nối bằng `address_runtime`. Backup local trong `data/backups/` cần được lưu theo chính sách vận hành trước khi dùng dữ liệu quan trọng.
+- **Tổng số hạng mục đã ghi nhận hoàn thành:** 27, trong đó các hạng mục foundation được đánh dấu rõ phạm vi code và kiểm chứng.
+- **Tổng số đầu việc còn lại được lập trong đợt cập nhật này:** 7; đây là backlog ưu tiên để bắt đầu nghiệp vụ, không phải toàn bộ phạm vi MVP.
+- **Trạng thái hiện tại:** Dữ liệu hành chính từ snapshot đã vào canonical cùng provenance/outbox. Chưa có luồng nghiệp vụ hoàn chỉnh chạy xuyên suốt; sqlc/repository, Data Source/Place use case, đối soát LEVEL_4, outbox processor và search implementation còn ở backlog.
+- **Trạng thái triển khai database:** Database local ở Goose v3 sau backup và restore thử; 186.581 dòng nguồn đã nạp, gồm 15.290 đơn vị hành chính canonical, 171.284 dòng LEVEL_4 unresolved và 7 dòng invalid. API/indexer/worker kết nối bằng `address_runtime`; backup local tại `data/backups/source-import-20260923T1652Z/` được Git bỏ qua và cần lưu theo chính sách vận hành trước khi dùng dữ liệu quan trọng.
 - **Chính sách triển khai schema:** Binary yêu cầu đúng schema version; nâng schema cần maintenance window. Rolling deployment với nhiều schema version chưa được hỗ trợ.
-- **Thứ tự ưu tiên:** DATA-01 → BIZ-01 → BIZ-02 → IDX-01 → API-01; chuẩn bị dữ liệu/tiêu chí QA-01 trong quá trình phát triển và nghiệm thu khi luồng hoàn chỉnh.
+- **Thứ tự ưu tiên:** DATA-01 → BIZ-01 → DATA-02 → BIZ-02 → IDX-01 → API-01; chuẩn bị dữ liệu/tiêu chí QA-01 trong quá trình phát triển và nghiệm thu khi luồng hoàn chỉnh.
 - **Bằng chứng phát hành:** 12 commit foundation đã push lên main, kết thúc tại [fea1524](https://github.com/pthawng/Address-Intelligence-Platform/commit/fea1524f2f4c5446986278e7de40f48450690717). Bản cập nhật backlog này được ghi nhận sau đợt push đó.
 - **Tài liệu vận hành:** [Database/migration runbook](../migrations/README.md), [Docker guide](../docker/README.md), [Integration tests](../test/integration/README.md).
 
