@@ -292,7 +292,7 @@ Suggestions
 
 Cross-module communication phải thông qua package `contract` chứa public interface và DTO thuần. Application của consumer chỉ import contract của provider; không import application, domain hoặc repository implementation của module khác. Bootstrap khởi tạo implementation và inject qua constructor.
 
-Quy tắc import được kiểm tra tự động bằng `go run ./tools/dependencycheck`, registry tại `dependency-policy.json`. Xem [Quản lý dependency](Quản%20lý%20dependency.md) để biết thư viện đã chốt, layer được phép import, quy trình versioning và giới hạn checker. Root module chỉ chứa `doc.go`; khi triển khai public API, thêm `contract/` cạnh domain/application/infrastructure/transport.
+Quy tắc import được kiểm tra tự động bằng `go run ./tools/dependencycheck`, registry tại `dependency-policy.json`. Xem [Quản lý dependency](<Lê Phước Thắng - Address Intelligence Platform - Quản lý dependency.md>) để biết thư viện đã chốt, layer được phép import, quy trình versioning và giới hạn checker. Root module chỉ chứa `doc.go`; khi triển khai public API, thêm `contract/` cạnh domain/application/infrastructure/transport.
 
 Ví dụ đúng:
 
@@ -438,7 +438,7 @@ geocoding
 
 `main.go` chỉ làm bootstrap:
 
-Implementation hiện tại dùng `bootstrap.NewAPI/NewIndexer/NewWorker` rồi `App.Run(ctx)`. Constructor đọc config và tạo logger riêng; Run mở tài nguyên, chạy runtime và cleanup LIFO với deadline chung kể cả khi startup thất bại. HTTP drain quá hạn sẽ cancel request context và force-close. Xem [Application Bootstrap](Application%20Bootstrap.md) cho cấu trúc và quy tắc lifecycle; database/search adapter cùng repositories/services nghiệp vụ vẫn chưa được nối vào runtime.
+Implementation hiện tại dùng `bootstrap.NewAPI/NewIndexer/NewWorker` rồi `App.Run(ctx)`. Constructor đọc config và tạo logger riêng; Run mở tài nguyên, chạy runtime và cleanup LIFO với deadline chung kể cả khi startup thất bại. HTTP drain quá hạn sẽ cancel request context và force-close. Xem [Application Bootstrap](<Lê Phước Thắng - Address Intelligence Platform - Application Bootstrap.md>) cho cấu trúc và quy tắc lifecycle; database/search adapter cùng repositories/services nghiệp vụ vẫn chưa được nối vào runtime.
 
 ```text
 load config
