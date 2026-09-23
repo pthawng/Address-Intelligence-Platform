@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -141,8 +142,48 @@ WITH owned AS (
 		}
 		line = strings.ReplaceAll(line, namespace+".", "app_schema.")
 		line = strings.ReplaceAll(line, "public.", "app_schema.")
+		line = normalizeDumpedCheckArray(line)
 		lines = append(lines, line)
 	}
 	sort.Strings(lines)
 	return strings.Join(lines, "\n"), rows.Err()
+}
+
+// pg_dump/pg_restore can deparse an enum-like varchar CHECK array as a cast
+// of the whole array. PostgreSQL deparses the same baseline created from SQL
+// as an array of individually cast elements. Retain every literal and only
+// normalize this narrow, equivalent representation during adoption checks.
+var (
+	wholeCheckArray = regexp.MustCompile(`\(ARRAY\[([^\]]+)\]\)::text\[\]`)
+	itemCheckArray  = regexp.MustCompile(`ARRAY\[([^\]]+)\]`)
+	wholeItem       = regexp.MustCompile(`^'((?:[^']|'')*)'::character varying$`)
+	castItem        = regexp.MustCompile(`^\('((?:[^']|'')*)'::character varying\)::text$`)
+)
+
+func normalizeDumpedCheckArray(line string) string {
+	if !strings.HasPrefix(line, "constraint:") {
+		return line
+	}
+	line = wholeCheckArray.ReplaceAllStringFunc(line, func(array string) string {
+		parts := strings.Split(wholeCheckArray.FindStringSubmatch(array)[1], ", ")
+		for i, part := range parts {
+			matches := wholeItem.FindStringSubmatch(part)
+			if matches == nil {
+				return array
+			}
+			parts[i] = matches[1]
+		}
+		return "ARRAY_TEXT[" + strings.Join(parts, ",") + "]"
+	})
+	return itemCheckArray.ReplaceAllStringFunc(line, func(array string) string {
+		parts := strings.Split(itemCheckArray.FindStringSubmatch(array)[1], ", ")
+		for i, part := range parts {
+			matches := castItem.FindStringSubmatch(part)
+			if matches == nil {
+				return array
+			}
+			parts[i] = matches[1]
+		}
+		return "ARRAY_TEXT[" + strings.Join(parts, ",") + "]"
+	})
 }

@@ -70,7 +70,11 @@ sequences, and trigger functions. It does not transfer the database, extensions,
 unrelated objects or objects in other databases. Review its allowlist before using
 a shared schema. Adoption verifies ledger and structure before recording the
 baseline; existing rows are preserved. Drift/extra objects cause refusal and
-require investigation rather than bypassing checks.
+require investigation rather than bypassing checks. A verified `pg_dump`/`pg_restore` can rewrite
+enum-like varchar CHECK arrays into an equivalent SQL form; the adoption snapshot
+normalizes only that expression form, retaining literal values and rejecting
+missing or changed constraints. Rehearse restore and adoption on a separate server
+before changing a data-bearing database.
 
 ## Repair privileges / late role provisioning
 
